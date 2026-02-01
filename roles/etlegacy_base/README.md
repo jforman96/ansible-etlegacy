@@ -12,11 +12,10 @@ Just a reproducible install that boots and runs the same way every time.
 
 ```
 /opt/etlegacy/
-  bin/       # server binary
-  etmain/    # pk3 files (maps, assets)
-  configs/   # server.cfg and related configs
-  home/      # fs_homepath (logs, downloads, runtime data)
-  logs/      # server logs
+  etmain/            # pk3 files (maps, assets)
+  legacy/            # mod files shipped with ETLegacy
+  home/              # fs_homepath (runtime data)
+    legacy/          # server.cfg lives here
 ```
 
 - Deploys a tuned server.cfg with dynamic map voting  
