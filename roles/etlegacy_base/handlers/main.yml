@@ -1,0 +1,5 @@
+---
+- name: restart etlegacy
+  systemd:
+    name: etlegacy
+    state: restarted

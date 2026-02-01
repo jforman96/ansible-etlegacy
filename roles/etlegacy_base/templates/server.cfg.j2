@@ -1,0 +1,39 @@
+set sv_hostname "{{ etlegacy_hostname }}"
+set rconpassword "{{ etlegacy_rcon_password }}"
+set sv_maxclients "{{ etlegacy_maxclients }}"
+
+set sv_pure "1"
+set sv_allowdownload "1"
+set sv_dl_maxRate "42000"
+set sv_wwwDownload "1"
+set sv_wwwBaseURL "{{ etlegacy_www_baseurl }}"
+
+set sv_master1 "etmaster.idsoftware.com"
+set sv_master2 "master.etlegacy.com"
+
+set g_log "server.log"
+set g_logSync "1"
+set g_logOptions "0"
+set g_logAdmin "1"
+
+set g_gametype "{{ etlegacy_gametype }}"
+set g_friendlyFire "0"
+set g_doWarmup "1"
+set g_warmup "20"
+set g_teamForceBalance "1"
+set g_antilag "1"
+set g_antiWallhack "1"
+
+set g_allowVote "1"
+set g_voting "1"
+set g_mapVoteFlags "9"
+set g_mapVoteMinPlayers "2"
+set g_mapVoteMaxPlayers "{{ etlegacy_maxclients }}"
+set g_mapVoteVoteDuration "20"
+set g_mapVoteMaps "{{ etlegacy_mapvote_list | join(' ') }}"
+
+set com_hunkMegs "256"
+set com_zoneMegs "64"
+set com_soundMegs "64"
+
+map {{ etlegacy_map }}

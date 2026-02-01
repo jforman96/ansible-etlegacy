@@ -1,0 +1,15 @@
+[Unit]
+Description=ETLegacy Game Server
+After=network.target
+
+[Service]
+User={{ etlegacy_user }}
+Group={{ etlegacy_group }}
+WorkingDirectory={{ etlegacy_install_dir }}
+
+ExecStart={{ etlegacy_install_dir }}/etlded.x86_64 +set fs_basepath {{ etlegacy_install_dir }} +set fs_homepath {{ etlegacy_install_dir }}/home +set fs_game legacy +exec server.cfg
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

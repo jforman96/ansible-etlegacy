@@ -1,0 +1,32 @@
+etlegacy_user: etlegacy
+etlegacy_group: etlegacy
+
+etlegacy_install_dir: /opt/etlegacy
+
+wolfet_installer_url: "https://cdn.splashdamage.com/downloads/games/wet/et260b.x86_full.zip"
+wolfet_tmp_dir: "/tmp/wolfet_extract"
+
+etlegacy_dirs:
+  - etmain
+  - home
+  - home/legacy
+
+
+etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
+
+etlegacy_port: 27960
+etlegacy_hostname: "JFlab - ETLegacy Server"
+etlegacy_rcon_password: "WcdvqP52Ug0lzL1LZcSwDDWkFhZHQ9VR"
+
+etlegacy_map: oasis
+etlegacy_gametype: 2
+
+etlegacy_www_baseurl: ""
+
+etlegacy_mapvote_list:
+  - oasis
+  - supplydepot
+  - frostbite
+  - adlernest
+
+etlegacy_maxclients: 20
