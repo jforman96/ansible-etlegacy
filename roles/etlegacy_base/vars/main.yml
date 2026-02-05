@@ -1,4 +1,3 @@
 etlegacy_packages:
   - curl
   - unzip
-  - libcurl4
