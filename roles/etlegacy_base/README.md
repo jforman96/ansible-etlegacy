@@ -24,9 +24,9 @@ Just a reproducible install that boots and runs the same way every time.
 
 ## Requirements
 
-- Debian/Ubuntu host  
+- Linux host  
 - Ansible 2.10+  
-- Python + apt module  
+- Python 3.12+  
 - Root or sudo access  
 
 ## Quick start
