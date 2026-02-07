@@ -14,7 +14,7 @@ etlegacy_dirs:
 
 etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
 
-etlegacy_hostname: "ETLegacy Server"
+etlegacy_hostname: "ET:Legacy Server"
 etlegacy_rcon_password: "<CHANGE_ME>"
 
 etlegacy_map: oasis
@@ -22,10 +22,5 @@ etlegacy_gametype: 6
 
 etlegacy_www_baseurl: ""
 
-etlegacy_mapvote_list:
-  - oasis
-  - supplydepot
-  - frostbite
-  - adlernest
-
+etlegacy_motd: "Welcome to Hell"
 etlegacy_maxclients: 20
