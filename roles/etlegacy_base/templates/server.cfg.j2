@@ -1,23 +1,23 @@
 set sv_hostname "{{ etlegacy_hostname }}"
 set sv_maxclients "{{ etlegacy_maxclients }}"
-set rconpassword "{{ etlegacy_rcon_password }}"
-
 set sv_wwwBaseURL "{{ etlegacy_www_baseurl }}"
 
-set g_log "server.log"
-set g_logSync "1"
+set rconpassword "{{ etlegacy_rcon_password }}"
+set server_motd0 "{{ etlegacy_motd }}"
 
-set g_voting "1"
-set g_motd "{{ etlegacy_motd }}"
-set g_gametype "{{ etlegacy_gametype }}"
-set g_friendlyFire "0"
+set g_antiWallhack "1"
+set g_antilag "1"
 set g_autoFireteams "0"
 set g_doWarmup "1"
+set g_friendlyFire "0"
+set g_gametype "{{ etlegacy_gametype }}"
+set g_log "server.log"
+set g_logSync "1"
+set g_motd "{{ etlegacy_motd }}"
+set g_teamForceBalance "1"
+set g_voting "1"
 set g_warmup "20"
 set g_xpSaver 1
 set g_xpSaverMaxAge "2628000"
-set g_teamForceBalance "1"
-set g_antilag "1"
-set g_antiWallhack "1"
 
 map {{ etlegacy_map }}
