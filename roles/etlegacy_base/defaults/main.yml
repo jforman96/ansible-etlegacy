@@ -18,7 +18,7 @@ etlegacy_hostname: "ETLegacy Server"
 etlegacy_rcon_password: "<CHANGE_ME>"
 
 etlegacy_map: oasis
-etlegacy_gametype: 2
+etlegacy_gametype: 6
 
 etlegacy_www_baseurl: ""
 
