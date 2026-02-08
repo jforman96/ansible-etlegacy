@@ -5,22 +5,46 @@ set sv_pure "1"
 set sv_protect "1"
 
 set rconpassword "{{ etlegacy_rcon_password }}"
+set match_minplayers "0"
 set server_motd0 "{{ etlegacy_motd }}"
+
+set skill_soldier "20 50 90 140"
+set skill_medic "20 50 90 140"
+set skill_fieldops "20 50 90 140"
+set skill_engineer "20 50 90 140"
+set skill_covertops "20 50 90 140"
+set skill_battlesense "20 50 90 140"
+set skill_lightweapons "20 50 90 140"
+
+set vote_allow_map 1
+set vote_allow_shuffleteams 1
+set vote_allow_swapteams 1
+set vote_allow_maprestart 1
+set vote_allow_muting 1
+set vote_allow_poll 1
+set vote_allow_cointoss 1
 
 set g_antiWallhack "1"
 set g_antilag "1"
+set g_antiwarp 1
 set g_autoFireteams "0"
+set g_customConfig ""
+set g_customConfigLocation ""
 set g_doWarmup "1"
+set g_dropAmmo "2"
+set g_dropHealth "2"
 set g_friendlyFire "0"
 set g_gametype "{{ etlegacy_gametype }}"
 set g_log "server.log"
 set g_logSync "1"
+set g_maxWarp 4
+set g_minGameClients "0"
 set g_motd "{{ etlegacy_motd }}"
+set g_password "{{ etlegacy_password }}"
 set g_protect "1"
 set g_teamForceBalance "1"
 set g_voting "1"
 set g_warmup "20"
 set g_xpSaver 1
-set g_xpSaverMaxAge "2628000"
 
 map {{ etlegacy_map }}
