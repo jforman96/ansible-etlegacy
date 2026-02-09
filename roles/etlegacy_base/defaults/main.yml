@@ -17,6 +17,7 @@ etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
 etlegacy_hostname: "ET:Legacy Server"
 etlegacy_password: "<CHANGE_ME>"
 etlegacy_rcon_password: "<CHANGE_ME>"
+etlegacy_www_baseurl: ""
 
 etlegacy_map: battery
 etlegacy_gametype: 6
