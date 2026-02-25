@@ -19,7 +19,6 @@ etlegacy_hostname: "ET:Legacy Server"
 etlegacy_password: "<CHANGE_ME>"
 etlegacy_rcon_password: "<CHANGE_ME>"
 etlegacy_www_baseurl: ""
-etlegacy_www_fallbackurl: ""
 
 etlegacy_map: battery
 etlegacy_gametype: 6
