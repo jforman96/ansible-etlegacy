@@ -10,6 +10,7 @@ etlegacy_dirs:
   - etmain
   - home
   - home/legacy
+  - legacy
 
 
 etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
@@ -18,11 +19,15 @@ etlegacy_hostname: "ET:Legacy Server"
 etlegacy_password: "<CHANGE_ME>"
 etlegacy_rcon_password: "<CHANGE_ME>"
 etlegacy_www_baseurl: ""
+etlegacy_www_fallbackurl: ""
 
 etlegacy_map: battery
 etlegacy_gametype: 6
 
-etlegacy_www_baseurl: ""
-
 etlegacy_motd: "Welcome to Hell"
 etlegacy_maxclients: 20
+
+etlegacy_advert: "1"
+etlegacy_flood_protect: "1"
+etlegacy_voice_chats_allowed: "5"
+etlegacy_min_map_age: "1"

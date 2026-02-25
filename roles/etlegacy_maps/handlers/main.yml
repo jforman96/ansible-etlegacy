@@ -1,0 +1,5 @@
+---
+- name: restart etlegacy
+  ansible.builtin.systemd:
+    name: etlegacy
+    state: restarted

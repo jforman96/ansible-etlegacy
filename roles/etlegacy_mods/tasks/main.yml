@@ -1,0 +1,10 @@
+---
+- name: Copy mod packs to legacy directory
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "{{ etlegacy_install_dir }}/legacy/{{ item }}"
+    owner: "{{ etlegacy_user }}"
+    group: "{{ etlegacy_group }}"
+    mode: "0644"
+  loop: "{{ etlegacy_mods }}"
+  notify: restart etlegacy
