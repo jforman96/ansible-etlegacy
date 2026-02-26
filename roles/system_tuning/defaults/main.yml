@@ -1,0 +1,36 @@
+---
+# Firewall
+firewall_services:
+  - ssh
+  - http
+  - https
+firewall_udp_ports:
+  - 27960
+
+# Swap
+swap_file: /.swapfile
+swap_size_mb: 1024
+
+# sysctl
+sysctl_swappiness: 10
+
+# SSL directory (shared with nginx_etlegacy role)
+acme_ssl_dir: /etc/ssl/wolf
+acme_ssl_owner: opc
+acme_ssl_group: nginx
+
+# acme.sh / TLS certificate
+acme_user: opc
+acme_email: "<CHANGE_ME>"
+acme_domain: "{{ etlegacy_server_name }}"
+acme_ca: zerossl
+acme_key_length: ec-256
+acme_nsupdate_key_file: /etc/acme/acme.key
+acme_nsupdate_server: "<CHANGE_ME>"
+acme_nsupdate_zone: "<CHANGE_ME>"
+# acme_nsupdate_key_content: define in host_vars (keep secret!)
+# Example:
+#   key "acme-example" {
+#       algorithm hmac-sha512;
+#       secret "BASE64SECRET==";
+#   };

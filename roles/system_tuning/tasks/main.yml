@@ -1,0 +1,191 @@
+---
+# ── sysctl ────────────────────────────────────────────────────────────────────
+
+- name: Deploy sysctl tuning config
+  ansible.builtin.template:
+    src: 99-tuning.conf.j2
+    dest: /etc/sysctl.d/99-tuning.conf
+    owner: root
+    group: root
+    mode: "0644"
+  notify: reload sysctl
+
+- name: Disable unnecessary services
+  ansible.builtin.systemd:
+    name: "{{ item }}"
+    enabled: no
+    state: stopped
+  loop:
+    - dtprobed
+    - fwupd
+    - gssproxy
+    - rpcbind
+    - udisks2
+  failed_when: false
+
+- name: Mask serial console getty
+  ansible.builtin.systemd:
+    name: serial-getty@ttyS0.service
+    masked: yes
+    state: stopped
+  failed_when: false
+
+- name: Cap systemd journal size
+  ansible.builtin.copy:
+    dest: /etc/systemd/journald.conf.d/maxuse.conf
+    content: |
+      [Journal]
+      SystemMaxUse=50M
+    mode: "0644"
+  notify: restart journald
+
+# ── Firewall ──────────────────────────────────────────────────────────────────
+
+- name: Install firewalld
+  ansible.builtin.package:
+    name: firewalld
+    state: present
+
+- name: Enable and start firewalld
+  ansible.builtin.systemd:
+    name: firewalld
+    enabled: yes
+    state: started
+
+- name: Open firewall services (permanent)
+  ansible.posix.firewalld:
+    service: "{{ item }}"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  loop: "{{ firewall_services }}"
+
+- name: Open firewall UDP ports (permanent)
+  ansible.posix.firewalld:
+    port: "{{ item }}/udp"
+    permanent: yes
+    state: enabled
+    immediate: yes
+  loop: "{{ firewall_udp_ports }}"
+
+# ── Swap ──────────────────────────────────────────────────────────────────────
+
+- name: Check if swapfile exists
+  ansible.builtin.stat:
+    path: "{{ swap_file }}"
+  register: swapfile_stat
+
+- name: Create swapfile
+  ansible.builtin.command:
+    cmd: "dd if=/dev/zero of={{ swap_file }} bs=1M count={{ swap_size_mb }}"
+    creates: "{{ swap_file }}"
+  when: not swapfile_stat.stat.exists
+
+- name: Set swapfile permissions
+  ansible.builtin.file:
+    path: "{{ swap_file }}"
+    owner: root
+    group: root
+    mode: "0600"
+  when: not swapfile_stat.stat.exists
+
+- name: Format swapfile
+  ansible.builtin.command:
+    cmd: "mkswap {{ swap_file }}"
+  when: not swapfile_stat.stat.exists
+
+- name: Enable swap
+  ansible.builtin.command:
+    cmd: "swapon {{ swap_file }}"
+  when: not swapfile_stat.stat.exists
+
+- name: Add swapfile to fstab
+  ansible.builtin.lineinfile:
+    path: /etc/fstab
+    line: "{{ swap_file }}\tnone\tswap\tsw\t0\t0"
+    regexp: "^{{ swap_file | regex_escape }}"
+    state: present
+
+# ── SSL directory ─────────────────────────────────────────────────────────────
+
+- name: Create SSL certificate directory
+  ansible.builtin.file:
+    path: "{{ acme_ssl_dir }}"
+    state: directory
+    owner: "{{ acme_ssl_owner }}"
+    group: "{{ acme_ssl_group }}"
+    mode: "0750"
+
+# ── acme.sh ───────────────────────────────────────────────────────────────────
+
+- name: Create /etc/acme directory
+  ansible.builtin.file:
+    path: /etc/acme
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Deploy nsupdate TSIG key
+  ansible.builtin.copy:
+    content: "{{ acme_nsupdate_key_content }}"
+    dest: "{{ acme_nsupdate_key_file }}"
+    owner: "{{ acme_user }}"
+    group: "{{ acme_user }}"
+    mode: "0600"
+
+- name: Check if acme.sh is installed
+  ansible.builtin.stat:
+    path: "/home/{{ acme_user }}/.acme.sh/acme.sh"
+  register: acmesh_stat
+
+- name: Download acme.sh installer
+  ansible.builtin.get_url:
+    url: https://get.acme.sh
+    dest: /tmp/acme-install.sh
+    mode: "0755"
+  when: not acmesh_stat.stat.exists
+
+- name: Install acme.sh
+  ansible.builtin.command:
+    cmd: "/tmp/acme-install.sh --install-online -m {{ acme_email }}"
+  become_user: "{{ acme_user }}"
+  environment:
+    HOME: "/home/{{ acme_user }}"
+  when: not acmesh_stat.stat.exists
+
+- name: Check if certificate already exists
+  ansible.builtin.stat:
+    path: "{{ acme_ssl_dir }}/wolf.fullchain.pem"
+  register: cert_stat
+
+- name: Issue TLS certificate via DNS nsupdate
+  ansible.builtin.command:
+    cmd: >
+      /home/{{ acme_user }}/.acme.sh/acme.sh
+      --issue
+      --dns dns_nsupdate
+      -d {{ acme_domain }}
+      --keylength {{ acme_key_length }}
+      --server {{ acme_ca }}
+  become_user: "{{ acme_user }}"
+  environment:
+    HOME: "/home/{{ acme_user }}"
+    NSUPDATE_KEY: "{{ acme_nsupdate_key_file }}"
+    NSUPDATE_SERVER: "{{ acme_nsupdate_server }}"
+    NSUPDATE_ZONE: "{{ acme_nsupdate_zone }}"
+  when: not cert_stat.stat.exists
+
+- name: Install certificate to SSL directory
+  ansible.builtin.command:
+    cmd: >
+      /home/{{ acme_user }}/.acme.sh/acme.sh
+      --install-cert
+      -d {{ acme_domain }}
+      --key-file       {{ acme_ssl_dir }}/wolf.key
+      --fullchain-file {{ acme_ssl_dir }}/wolf.fullchain.pem
+      --reloadcmd      "sudo systemctl reload nginx"
+  become_user: "{{ acme_user }}"
+  environment:
+    HOME: "/home/{{ acme_user }}"
+  when: not cert_stat.stat.exists
