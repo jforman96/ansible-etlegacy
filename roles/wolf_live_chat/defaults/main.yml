@@ -1,0 +1,5 @@
+---
+live_chat_dir: /opt/live-chat
+live_chat_port: 8080
+live_chat_password: "<CHANGE_ME>"
+live_chat_log_file: "{{ etlegacy_install_dir }}/home/legacy/server.log"

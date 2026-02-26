@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import re
+from datetime import datetime
+
+logfile = "{{ live_chat_log_file }}"
+
+color = re.compile(r"\^\d")
+def clean(s):
+    return color.sub("", s)
+
+current_map = None
+current_day = None
+
+with open(logfile, "r", encoding="latin-1", errors="ignore") as f:
+    for raw in f:
+        # Convert Latin-1 bytes → CP1250 → proper UTF-8
+        line = raw.encode("latin-1", errors="ignore").decode("cp1250", errors="ignore")
+
+        # Detect day
+        if "gametime:" in line:
+            try:
+                parts = line.split("gametime:", 1)[1].strip()
+                dt = datetime.strptime(parts, "%a %b %d %H:%M:%S %Y")
+                day = dt.strftime("%Y-%m-%d")
+                if day != current_day:
+                    current_day = day
+                    print(f"\n==================== {current_day} ====================\n")
+            except:
+                pass
+
+        # Detect map
+        if "InitGame:" in line and "map:" in line:
+            parts = line.split("map:")
+            if len(parts) > 1:
+                current_map = parts[1].strip().split()[0]
+                print(f"\n--- MATCH: {current_map} ---\n")
+            continue
+
+        # Chat
+        if " say: " in line:
+            try:
+                _, msg = line.split(" say: ", 1)
+                msg = clean(msg.strip())
+                print(msg)
+            except:
+                continue

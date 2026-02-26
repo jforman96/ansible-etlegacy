@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ET:Legacy Live Chat</title>
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}
+
+body {
+    background: #0a0a0a;
+    color: #00aa00;
+    font-family: 'Courier New', 'Lucida Console', monospace;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* CRT scanlines effect */
+    background-image:
+        repeating-linear-gradient(
+            0deg,
+            rgba(0, 0, 0, 0.15) 0px,
+            rgba(0, 0, 0, 0.15) 1px,
+            transparent 1px,
+            transparent 2px
+        );
+}
+
+#loginScreen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: #0a0a0a;
+}
+
+#loginScreen.hidden {
+    display: none;
+}
+
+.loginBox {
+    border: 2px solid #00aa00;
+    padding: 30px;
+    background: #1a1a1a;
+    box-shadow: inset 0 0 8px rgba(0, 170, 0, 0.2), 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+.loginBox h1 {
+    color: #00ff00;
+    font-size: 20px;
+    text-align: center;
+    margin-bottom: 25px;
+    letter-spacing: 2px;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+}
+
+.loginBox p {
+    color: #00aa00;
+    font-size: 12px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.formGroup {
+    margin-bottom: 15px;
+}
+
+.formGroup label {
+    display: block;
+    color: #00aa00;
+    font-size: 11px;
+    margin-bottom: 6px;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.6);
+}
+
+.formGroup input {
+    width: 250px;
+    padding: 8px;
+    background: #0a0a0a;
+    color: #00ff00;
+    border: 1px solid #00aa00;
+    font-family: inherit;
+    font-size: 12px;
+}
+
+.formGroup input:focus {
+    outline: none;
+    box-shadow: inset 0 0 4px rgba(0, 170, 0, 0.3);
+    border-color: #00ff00;
+}
+
+.loginBox button {
+    width: 100%;
+    padding: 8px;
+    background: #0a0a0a;
+    color: #00aa00;
+    border: 1px solid #00aa00;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.8);
+}
+
+.loginBox button:hover {
+    background: #1a1a1a;
+    color: #00ff00;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.8);
+}
+
+.loginBox button:active {
+    background: #0a0a0a;
+}
+
+.loginError {
+    color: #ff4444;
+    font-size: 11px;
+    text-align: center;
+    margin-top: 10px;
+    text-shadow: 0 0 2px rgba(255, 68, 68, 0.6);
+    display: none;
+}
+
+.loginError.show {
+    display: block;
+}
+
+#chatContainer {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+}
+
+#chatContainer.hidden {
+    display: none;
+}
+
+header {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #1a1a1a;
+    border-top: 2px solid #00aa00;
+    border-bottom: 2px solid #00aa00;
+    padding: 10px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: inset 0 0 8px rgba(0, 170, 0, 0.2), 0 0 8px rgba(0, 0, 0, 0.8);
+}
+
+header div:first-child {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+header img {
+    width: 32px;
+    height: 32px;
+    border: 1px solid #00aa00;
+    filter: brightness(0.85);
+}
+
+h2 {
+    color: #00ff00;
+    font-size: 18px;
+    letter-spacing: 2px;
+    font-weight: bold;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.5);
+}
+
+#controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+button {
+    background: #0a0a0a;
+    color: #00aa00;
+    border: 1px solid #00aa00;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 0;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: bold;
+    transition: all 0.2s ease;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.8);
+}
+
+button:hover {
+    background: #1a1a1a;
+    color: #00ff00;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.8);
+    box-shadow: 0 0 4px rgba(0, 170, 0, 0.5);
+}
+
+button:active {
+    background: #0a0a0a;
+}
+
+button.active {
+    background: #1a3a1a;
+    border-color: #00ff00;
+    color: #00ff00;
+    box-shadow: inset 0 0 4px rgba(0, 255, 0, 0.3);
+    text-shadow: 0 0 6px rgba(0, 255, 0, 1);
+}
+
+#status {
+    color: #00aa00;
+    font-size: 10px;
+    font-weight: bold;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 49%, 100% { opacity: 1; }
+    50%, 99% { opacity: 0.3; }
+}
+
+#chat {
+    flex: 1;
+    background: #0a0a0a;
+    padding: 12px 15px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    font-size: 12px;
+    line-height: 1.6;
+    border-top: 1px solid #333;
+    border-bottom: 1px solid #333;
+}
+
+.msg {
+    margin-bottom: 8px;
+    display: flex;
+    padding: 2px 4px;
+    transition: background 0.1s ease;
+}
+
+.msg:hover {
+    background: rgba(0, 170, 0, 0.1);
+}
+
+.nick {
+    font-weight: bold;
+    margin-right: 6px;
+    min-width: 120px;
+    flex-shrink: 0;
+    color: #00ff00;
+    text-shadow: 0 0 3px rgba(0, 255, 0, 0.6);
+}
+
+.text {
+    color: #00aa00;
+    flex: 1;
+}
+
+.day {
+    margin: 15px 0 10px;
+    padding: 8px;
+    text-align: center;
+    border: 1px solid #00aa00;
+    border-radius: 0;
+    color: #00ff00;
+    font-weight: bold;
+    font-size: 11px;
+    letter-spacing: 1px;
+    background: #1a1a1a;
+    text-shadow: 0 0 4px rgba(0, 255, 0, 0.6);
+}
+
+.map {
+    margin: 12px 0 8px;
+    padding: 6px;
+    text-align: center;
+    border-bottom: 1px dashed #00aa00;
+    color: #00aa00;
+    font-weight: bold;
+    font-size: 10px;
+    letter-spacing: 1px;
+    background: #0a1a0a;
+    text-shadow: 0 0 2px rgba(0, 170, 0, 0.6);
+}
+
+/* Scrollbar styling */
+#chat::-webkit-scrollbar {
+    width: 12px;
+}
+
+#chat::-webkit-scrollbar-track {
+    background: #0a0a0a;
+    border-left: 1px solid #1a1a1a;
+}
+
+#chat::-webkit-scrollbar-thumb {
+    background: #1a1a1a;
+    border: 1px solid #00aa00;
+}
+
+#chat::-webkit-scrollbar-thumb:hover {
+    background: #2a2a2a;
+    box-shadow: inset 0 0 4px rgba(0, 170, 0, 0.3);
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+    <div class="loginBox">
+        <h1>ET:LEGACY CHAT</h1>
+        <p>ENTER PASSWORD TO ACCESS</p>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="formGroup">
+                <label for="password">PASSWORD:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit">LOGIN</button>
+            <div class="loginError" id="loginError">INVALID PASSWORD</div>
+        </form>
+    </div>
+</div>
+
+<div id="chatContainer" class="hidden">
+    <header>
+        <div>
+            <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s" alt="ET:Legacy">
+            <h2>ET:LEGACY CHAT</h2>
+        </div>
+        <div id="controls">
+            <span id="status">●</span>
+            <button id="censorBtn">CENSOR OFF</button>
+        </div>
+    </header>
+
+    <div id="chat">INITIALIZING...</div>
+</div>
+
+<script>
+const CORRECT_PASSWORD = "{{ live_chat_password }}";
+// Resolve backend chat API URL:
+// - when page is opened via file:// use localhost:8080 (developer convenience)
+// - otherwise use same origin (avoids trying to contact user's local 127.0.0.1)
+const CHAT_API_URL = (function(){
+    try {
+        if (location.protocol === 'file:') return 'http://127.0.0.1:8080/chat/api';
+        // use same origin so JS contacts the server that served the page
+        return `${location.protocol}//${location.host}/chat/api`;
+    } catch (e) {
+        return 'http://127.0.0.1:8080/chat/api';
+    }
+})();
+console.info('CHAT_API_URL →', CHAT_API_URL);
+
+function normalizePassword(s){
+    return String(s || '').normalize('NFKD').replace(/[\u0300-\u036f]/g,'');
+}
+
+function handleLogin(event){
+    if (event && event.preventDefault) event.preventDefault();
+    const passwordInput = document.getElementById("password");
+    const errorDiv = document.getElementById("loginError");
+    const entered = (passwordInput && passwordInput.value) || '';
+
+    // accept exact match OR normalized (strip diacritics) match for convenience
+    if (entered === CORRECT_PASSWORD || normalizePassword(entered) === normalizePassword(CORRECT_PASSWORD)){
+        try { sessionStorage.setItem("et_chat_authenticated", "true"); } catch(e) { console.warn('sessionStorage unavailable', e); }
+        const loginScreen = document.getElementById("loginScreen");
+        const chatContainer = document.getElementById("chatContainer");
+        if (loginScreen) loginScreen.classList.add("hidden");
+        if (chatContainer) chatContainer.classList.remove("hidden");
+
+        // ensure UI updates even if load/start throw
+        loadChat().catch(()=>{});
+        try { startChatUpdates(); } catch(e) { console.error(e); }
+        if (errorDiv) errorDiv.classList.remove('show');
+        return;
+    }
+
+    if (errorDiv) errorDiv.classList.add('show');
+    if (passwordInput) { passwordInput.value = ''; passwordInput.focus(); }
+}
+
+// Attach fallback listeners in case inline onsubmit doesn't fire in some environments
+try {
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm && !loginForm._loginListenerAttached) {
+        loginForm.addEventListener('submit', handleLogin);
+        const submitBtn = loginForm.querySelector('button[type="submit"]');
+        if (submitBtn) submitBtn.addEventListener('click', (e) => { /* click fallback */ });
+        loginForm._loginListenerAttached = true;
+    }
+    // expose for inline handlers too
+    window.handleLogin = handleLogin;
+} catch (e) {
+    console.error('could not attach login listeners', e);
+}
+
+// Check if already authenticated (safe init + watchdog)
+function initChatFromSession() {
+    try {
+        if (sessionStorage.getItem("et_chat_authenticated") === "true") {
+            const loginScreen = document.getElementById("loginScreen");
+            const chatContainer = document.getElementById("chatContainer");
+            if (loginScreen) loginScreen.classList.add("hidden");
+            if (chatContainer) chatContainer.classList.remove("hidden");
+
+            // ensure we always attempt to load chat even if startChatUpdates throws
+            loadChat().catch(() => {});
+
+            try {
+                startChatUpdates();
+            } catch (e) {
+                console.error('startChatUpdates failed', e);
+            }
+        } else {
+            const pwd = document.getElementById("password");
+            if (pwd) pwd.focus();
+        }
+    } catch (err) {
+        console.error('initChatFromSession error', err);
+        const pwd = document.getElementById("password");
+        if (pwd) pwd.focus();
+    }
+
+    // If the static INITIALIZING... text is still present after 1s, retry load once
+    setTimeout(() => {
+        const chat = document.getElementById('chat');
+        if (chat && chat.textContent.trim() === 'INITIALIZING...') {
+            loadChat().catch(() => {});
+        }
+    }, 1000);
+}
+
+initChatFromSession();
+
+let censored = false;
+let autoScroll = true;
+let lastData = null;
+let chatUpdateInterval = null;
+let statusInterval = null;
+let chatScrollListenerAdded = false;
+
+function startChatUpdates() {
+    // idempotent — don't attach multiple intervals / listeners on repeated calls
+    if (chatUpdateInterval !== null) return;
+
+    const censorBtn = document.getElementById("censorBtn");
+    if (censorBtn) {
+        censorBtn.addEventListener("click", () => {
+            censored = !censored;
+            censorBtn.textContent = censored ? "CENSOR ON" : "CENSOR OFF";
+            censorBtn.classList.toggle("active", censored);
+            loadChat(true);
+        });
+    }
+
+    if (!chatScrollListenerAdded) {
+        const chatEl = document.getElementById("chat");
+        if (chatEl) {
+            chatEl.addEventListener("scroll", () => {
+                const atBottom = chatEl.scrollTop + chatEl.clientHeight >= chatEl.scrollHeight - 50;
+                autoScroll = atBottom;
+            });
+            chatScrollListenerAdded = true;
+        }
+    }
+
+    if (statusInterval === null) statusInterval = setInterval(updateStatus, 800);
+    chatUpdateInterval = setInterval(loadChat, 2000);
+}
+
+function updateStatus() {
+    const status = document.getElementById("status");
+    if (status) {
+        status.style.opacity = status.style.opacity === "1" ? "0.4" : "1";
+    }
+}
+
+function hashColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++)
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    const colors = ["#00ff00", "#00ee00", "#00cc00", "#00dd00", "#00bb00"];
+    return colors[Math.abs(hash) % colors.length];
+}
+
+// --- Content filter: expanded bad-words + normalization helpers ---
+function normalizeForFilter(s){
+    return String(s).toLowerCase()
+      .normalize('NFKD').replace(/[\u0300-\u036f]/g,'')   // strip diacritics
+      .replace(/[@4]/g,'a').replace(/[0o]/g,'o').replace(/[13]/g,'i').replace(/5/g,'s') // simple leet
+      .replace(/(.)\1{2,}/g,'$1$1')                      // collapse long repeats
+      .replace(/[^a-z0-9]/g,'');                         // keep letters+digits only
+}
+
+const BAD_WORDS = [
+  // Czech – sexual / strong
+  "kurva","kurvo","kurvy","kurvit","zkurvit","zkurveny","zkurvenej","kurev","kurevsky",
+  "pica","pico","pici","picu","picina","píča","píčo","píčovina","píčus","picus","pichat","pichal",
+  "curak","čurak","čurák","čuráci","curaci","čuráku",
+  "kunda","kundy","kundi","kundicka",
+  "pizda","pizdo",
+
+  // Czech – excretory / verbs
+  "hovno","hovna","hovadina","hovínko",
+  "sracka","sračky","sracky","srat","srát","posrat","posrany","posranej","zasrat","zasrany","vyser","vysrat",
+
+  // Czech – insults / slurs (non-protected-class)
+  "kokot","kokote","kokotinec","kokotina","kokoti",
+  "zmrd","zmrde","zmrdek","zmrdit",
+  "mrdat","mrda","mrdej","mrdka",
+  "blbec","blbecek","blbe","blbost","debil","debilni","debilko",
+  "idiot","idiote","idioti",
+  "svine","svina","svinsky","svin",
+
+  // Czech – common phrases / exclamations
+  "tyvole","ty vole","vole","do pici","dopici","do píče","do prdele","doprdele","v prdeli","vprdeli","napicu","napíču",
+
+  // Czech – verbs/other
+  "jebat","jebu","jebal","jebač","zjebat","zjebal",
+
+  // English (common)
+  "fuck","fucking","fucker","shit","bitch","bitchy","asshole","damn","crap","suck","sucks","idiot","moron","noob"
+];
+
+const NORMALIZED_BAD = new Set(BAD_WORDS.map(normalizeForFilter));
+
+function maskTokenPreservePunct(token){
+    // replace letters/digits (including latin-1 diacritics) with '*', keep punctuation
+    return token.replace(/[A-Za-z0-9\u00C0-\u024F]/g,'*');
+}
+
+function applyCensor(text){
+    if (!censored) return text;
+
+    // Replace entire tokens that look like bad words (after normalization)
+    return String(text).replace(/\b[^\s]+\b/g, token => {
+        const normalized = normalizeForFilter(token);
+        if (!normalized) return token;
+        for (const bw of NORMALIZED_BAD) {
+            if (normalized === bw || normalized.includes(bw)) {
+                return maskTokenPreservePunct(token);
+            }
+        }
+        return token;
+    });
+}
+
+
+async function loadChat(forceReload = false) {
+    const url = CHAT_API_URL;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7000);
+
+    try {
+        console.debug('fetching chat ->', url);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+
+        if (!res.ok) {
+            console.error('chat API error', res.status, res.statusText);
+            const chat = document.getElementById('chat');
+            chat.innerHTML = `[ERROR] ${res.status} ${res.statusText} — retrying... (url: ${url})`;
+            return;
+        }
+
+        const data = await res.json();
+
+        // validate payload shape (server returns an array)
+        if (!Array.isArray(data)) {
+            console.error('unexpected payload from chat API', data);
+            throw new Error('unexpected payload');
+        }
+
+        if (!forceReload && JSON.stringify(data) === JSON.stringify(lastData)) {
+            return;
+        }
+        lastData = data;
+
+        const chat = document.getElementById('chat');
+        chat.innerHTML = '';
+
+        data.forEach((line) => {
+            if (line.startsWith('=== DAY ')) {
+                const div = document.createElement('div');
+                div.className = 'day';
+                div.textContent = line.replace('=== ', '').replace(' ===', '');
+                chat.appendChild(div);
+                return;
+            }
+
+            if (line.startsWith('--- MAP ')) {
+                const div = document.createElement('div');
+                div.className = 'map';
+                div.textContent = line.replace('--- ', '').replace(' ---', '');
+                chat.appendChild(div);
+                return;
+            }
+
+            let nick = '???';
+            let text = line;
+            const idx = line.indexOf(':');
+            if (idx !== -1) {
+                nick = line.substring(0, idx);
+                text = line.substring(idx + 1).trim();
+            }
+
+            text = applyCensor(text);
+
+            const div = document.createElement('div');
+            div.className = 'msg';
+
+            const nickSpan = document.createElement('span');
+            nickSpan.className = 'nick';
+            nickSpan.style.color = hashColor(nick);
+            nickSpan.textContent = nick + ':';
+
+            const textSpan = document.createElement('span');
+            textSpan.className = 'text';
+            textSpan.textContent = text;
+
+            div.appendChild(nickSpan);
+            div.appendChild(textSpan);
+            chat.appendChild(div);
+        });
+
+        setTimeout(() => {
+            chat.scrollTop = chat.scrollHeight;
+            autoScroll = true;
+        }, 50);
+
+    } catch (err) {
+        clearTimeout(timer);
+        console.error('loadChat failed for', url, err && err.message ? err.message : err);
+
+        const chat = document.getElementById('chat');
+        const msg = (err && err.name === 'AbortError') ? 'timeout' : (err && err.message ? err.message : String(err));
+
+        if (!lastData || lastData.length === 0) {
+            chat.innerHTML = `[CONNECTION ERROR — retrying] (url: ${url} — ${msg})`;
+        } else {
+            const notice = document.createElement('div');
+            notice.className = 'map notice';
+            notice.textContent = `[CONNECTION ERROR — retrying...] (url: ${url} — ${msg})`;
+
+            // add manual retry control
+            const retryBtn = document.createElement('button');
+            retryBtn.textContent = 'Retry now';
+            retryBtn.style.marginLeft = '12px';
+            retryBtn.addEventListener('click', () => loadChat(true));
+            notice.appendChild(retryBtn);
+
+            // remove previous transient notices first
+            const prev = chat.querySelectorAll('.map.notice');
+            prev.forEach(n => n.remove());
+            chat.appendChild(notice);
+        }
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+[Unit]
+Description=ETLegacy Live Chat Backend
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory={{ live_chat_dir }}
+ExecStart=/usr/bin/python3 {{ live_chat_dir }}/chat.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
