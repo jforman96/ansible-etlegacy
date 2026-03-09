@@ -1,7 +1,12 @@
+---
 etlegacy_user: etlegacy
 etlegacy_group: etlegacy
 
 etlegacy_install_dir: /opt/etlegacy
+
+# ET:Legacy version — update file ID at https://www.etlegacy.com/download
+etlegacy_version: "2.83.2"
+etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
 
 wolfet_installer_url: "https://cdn.splashdamage.com/downloads/games/wet/et260b.x86_full.zip"
 wolfet_tmp_dir: "/tmp/wolfet_extract"
@@ -12,21 +17,29 @@ etlegacy_dirs:
   - home/legacy
   - legacy
 
-
-etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
-
+# Server identity
 etlegacy_hostname: "ET:Legacy Server"
-etlegacy_password: "<CHANGE_ME>"
+etlegacy_motd: "ET:Legacy Server"
+etlegacy_maxclients: 20
+
+# Auth — override these in your private vars
+etlegacy_password: ""
 etlegacy_rcon_password: "<CHANGE_ME>"
+
+# Fast download (HTTP only — ET engine does not support HTTPS downloads)
+# Set to your server's base URL, e.g. "http://myserver.example.com"
 etlegacy_www_baseurl: ""
+etlegacy_www_fallbackurl: ""
+etlegacy_dl_disconnected: "1"
+etlegacy_dl_maxrate: "42000"
+
+# Set to "0" to hide server from public master server browser (private servers)
+etlegacy_advert: "1"
+etlegacy_flood_protect: "1"
 
 etlegacy_map: battery
 etlegacy_gametype: 6
 
-etlegacy_motd: "Welcome to Hell"
-etlegacy_maxclients: 20
-
-etlegacy_advert: "1"
-etlegacy_flood_protect: "1"
-etlegacy_voice_chats_allowed: "5"
 etlegacy_min_map_age: "1"
+etlegacy_voice_chats_allowed: "5"
+etlegacy_warmup: "20"

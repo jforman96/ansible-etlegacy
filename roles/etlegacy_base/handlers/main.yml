@@ -1,5 +1,9 @@
 ---
 - name: restart etlegacy
-  systemd:
+  ansible.builtin.systemd:
     name: etlegacy
     state: restarted
+
+- name: reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes

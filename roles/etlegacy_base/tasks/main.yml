@@ -3,7 +3,6 @@
   ansible.builtin.package:
     name: "{{ etlegacy_packages }}"
     state: present
-    update_cache: yes
 
 - name: Ensure etlegacy group exists
   ansible.builtin.group:
@@ -32,9 +31,8 @@
     url: "{{ etlegacy_download_url }}"
     dest: "/tmp/etlegacy.tar.gz"
     mode: "0644"
-  register: etlegacy_download
 
-- name: Check if ETLegacy is already extracted
+- name: Check if ETLegacy binary exists
   ansible.builtin.stat:
     path: "{{ etlegacy_install_dir }}/etlded.x86_64"
   register: etl_binary
@@ -44,11 +42,16 @@
     src: "/tmp/etlegacy.tar.gz"
     dest: "{{ etlegacy_install_dir }}"
     remote_src: yes
-    extra_opts: [ "--strip-components=1" ]
+    extra_opts: ["--strip-components=1"]
     owner: "{{ etlegacy_user }}"
     group: "{{ etlegacy_group }}"
   when: not etl_binary.stat.exists
   notify: restart etlegacy
+
+- name: Remove ETLegacy download archive
+  ansible.builtin.file:
+    path: "/tmp/etlegacy.tar.gz"
+    state: absent
 
 - name: Check if pak0.pk3 exists
   ansible.builtin.stat:
@@ -60,7 +63,6 @@
     url: "{{ wolfet_installer_url }}"
     dest: "/tmp/et260b.zip"
     mode: "0644"
-  register: wolfet_download
   when: not pak0.stat.exists
 
 - name: Create temp extraction directory
@@ -74,7 +76,7 @@
     src: "/tmp/et260b.zip"
     dest: "{{ wolfet_tmp_dir }}"
     remote_src: yes
-  when: wolfet_download.changed and not pak0.stat.exists
+  when: not pak0.stat.exists
 
 - name: Make .run installer executable
   ansible.builtin.file:
@@ -83,12 +85,14 @@
   when: not pak0.stat.exists
 
 - name: Extract .run installer
-  ansible.builtin.command: "{{ wolfet_tmp_dir }}/et260b.x86_keygen_V03.run --target {{ wolfet_tmp_dir }}/extracted --noexec"
+  ansible.builtin.command: >
+    {{ wolfet_tmp_dir }}/et260b.x86_keygen_V03.run
+    --target {{ wolfet_tmp_dir }}/extracted --noexec
   args:
     creates: "{{ wolfet_tmp_dir }}/extracted/etmain"
   when: not pak0.stat.exists
 
-- name: Copy pk3 files from installer
+- name: Copy pak files from installer
   ansible.builtin.copy:
     src: "{{ wolfet_tmp_dir }}/extracted/etmain/{{ item }}"
     dest: "{{ etlegacy_install_dir }}/etmain/{{ item }}"
@@ -113,7 +117,7 @@
 
 - name: Deploy server.cfg
   ansible.builtin.template:
-    src: "server.cfg.j2"
+    src: server.cfg.j2
     dest: "{{ etlegacy_install_dir }}/home/legacy/server.cfg"
     owner: "{{ etlegacy_user }}"
     group: "{{ etlegacy_group }}"
@@ -122,14 +126,12 @@
 
 - name: Deploy systemd service
   ansible.builtin.template:
-    src: "etlegacy.service.j2"
-    dest: "/etc/systemd/system/etlegacy.service"
+    src: etlegacy.service.j2
+    dest: /etc/systemd/system/etlegacy.service
     mode: "0644"
-  notify: restart etlegacy
-
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: yes
+  notify:
+    - reload systemd daemon
+    - restart etlegacy
 
 - name: Enable and start ETLegacy service
   ansible.builtin.systemd:
