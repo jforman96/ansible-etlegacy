@@ -43,4 +43,4 @@ etlegacy_gametype: 6
 etlegacy_min_map_age: "1"
 etlegacy_voice_chats_allowed: "5"
 etlegacy_bluelimbotime: "15000"
-etlegacy_intermission_time: "15"
+etlegacy_intermission_time: "25"
