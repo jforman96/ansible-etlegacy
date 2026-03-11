@@ -18,7 +18,7 @@ set sv_advert            "{{ etlegacy_advert }}"
 set sv_floodProtect      "{{ etlegacy_flood_protect }}"
 
 // --- Admin ---
-set rconpassword    "{{ etlegacy_rcon_password }}"
+set rconpassword     "{{ etlegacy_rcon_password }}"
 set match_minplayers "0"
 
 // --- MOTD ---
@@ -26,12 +26,12 @@ set server_motd0 "{{ etlegacy_motd }}"
 set g_motd       "{{ etlegacy_motd }}"
 
 // --- Skills ---
-set skill_soldier    "20 50 90 140"
-set skill_medic      "20 50 90 140"
-set skill_fieldops   "20 50 90 140"
-set skill_engineer   "20 50 90 140"
-set skill_covertops  "20 50 90 140"
-set skill_battlesense "20 50 90 140"
+set skill_soldier      "20 50 90 140"
+set skill_medic        "20 50 90 140"
+set skill_fieldops     "20 50 90 140"
+set skill_engineer     "20 50 90 140"
+set skill_covertops    "20 50 90 140"
+set skill_battlesense  "20 50 90 140"
 set skill_lightweapons "20 50 90 140"
 
 // --- Voting ---
@@ -76,7 +76,7 @@ set g_customConfigLocation ""
 set g_log     "server.log"
 set g_logSync "1"
 
-// --- Password (leave empty for public server) ---
+// --- Password (omitted for public servers) ---
 {% if etlegacy_password %}
 set g_password "{{ etlegacy_password }}"
 {% endif %}

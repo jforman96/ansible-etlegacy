@@ -4,7 +4,7 @@ etlegacy_group: etlegacy
 
 etlegacy_install_dir: /opt/etlegacy
 
-# ET:Legacy version — update file ID at https://www.etlegacy.com/download
+# ET:Legacy v2.83.2 — update file ID at https://www.etlegacy.com/download when upgrading
 etlegacy_version: "2.83.2"
 etlegacy_download_url: "https://www.etlegacy.com/download/file/700"
 
@@ -40,7 +40,15 @@ etlegacy_flood_protect: "1"
 etlegacy_map: battery
 etlegacy_gametype: 6
 
+etlegacy_port: 27960
+
 etlegacy_min_map_age: "1"
 etlegacy_voice_chats_allowed: "5"
 etlegacy_bluelimbotime: "15000"
 etlegacy_intermission_time: "25"
+
+# Nginx / TLS — used by nginx_etlegacy role if present
+# Override in private vars with your actual domain and certificate paths
+etlegacy_server_name: "myserver.example.com"
+nginx_ssl_certificate: "/etc/ssl/myserver/fullchain.pem"
+nginx_ssl_certificate_key: "/etc/ssl/myserver/privkey.pem"

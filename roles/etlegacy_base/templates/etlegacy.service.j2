@@ -11,6 +11,7 @@ ExecStart={{ etlegacy_install_dir }}/etlded.x86_64 \
   +set fs_basepath {{ etlegacy_install_dir }} \
   +set fs_homepath {{ etlegacy_install_dir }}/home \
   +set fs_game legacy \
+  +set net_port {{ etlegacy_port }} \
   +exec server.cfg
 
 Restart=on-failure
