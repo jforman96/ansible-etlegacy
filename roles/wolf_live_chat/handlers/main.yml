@@ -1,6 +1,9 @@
 ---
+- name: reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: yes
+
 - name: restart live-chat
   ansible.builtin.systemd:
     name: live-chat
     state: restarted
-    daemon_reload: yes

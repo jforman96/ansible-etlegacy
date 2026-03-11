@@ -16,6 +16,14 @@
     mode: "0755"
   notify: restart live-chat
 
+- name: Deploy favicon
+  ansible.builtin.copy:
+    src: favicon.ico
+    dest: "{{ live_chat_dir }}/favicon.ico"
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: Deploy index.html frontend
   ansible.builtin.template:
     src: index.html.j2
@@ -39,11 +47,9 @@
     owner: root
     group: root
     mode: "0644"
-  notify: restart live-chat
-
-- name: Reload systemd daemon
-  ansible.builtin.systemd:
-    daemon_reload: yes
+  notify:
+    - reload systemd daemon
+    - restart live-chat
 
 - name: Enable and start live-chat service
   ansible.builtin.systemd:
