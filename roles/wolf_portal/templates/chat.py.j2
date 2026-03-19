@@ -8,9 +8,11 @@ import sqlite3
 from datetime import datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
-logfile   = "{{ live_chat_log_file }}"
-_PASSWORD = "{{ live_chat_password }}"
-DB_PATH   = "{{ live_chat_dir }}/portal.db"
+logfile     = "{{ live_chat_log_file }}"
+_PASSWORD   = "{{ live_chat_password }}"
+DB_PATH     = "{{ live_chat_dir }}/portal.db"
+_GAME_PORT  = {{ etlegacy_game_port | default(27960) }}
+_RCON_PASS  = "{{ etlegacy_rcon_password | default('') }}"
 
 # Stateless token: HMAC-SHA256(password) — changing password auto-invalidates all tokens
 VALID_TOKEN = hmac.new(
@@ -147,14 +149,13 @@ def parse_chat():
     return output[-400:]
 
 def parse_gameinfo():
-    """Return live game info: UDP player list + log-based kill feed and chat."""
+    """Return live game info: UDP player list + RCON team data + log kill feed."""
     import socket as _socket
-
-    _GAME_PORT = {{ etlegacy_port | default(27960) }}
 
     # ── UDP getstatus (no auth) ────────────────────────────────────────────
     players = []
     map_name = "N/A"
+    gametype = ""
     server_online = False
     try:
         sock = _socket.socket(_socket.AF_INET, _socket.SOCK_DGRAM)
@@ -167,6 +168,7 @@ def parse_gameinfo():
         parts = lines[1].split("\\") if len(lines) > 1 else []
         cvars = {parts[i]: parts[i+1] for i in range(1, len(parts)-1, 2)}
         map_name = cvars.get("mapname", "N/A")
+        gametype = cvars.get("g_gametype", "")
         server_online = True
         for line in lines[2:]:
             line = line.strip()
@@ -178,12 +180,23 @@ def parse_gameinfo():
                     "name":  _clean(m.group(3)),
                     "score": int(m.group(1)),
                     "ping":  int(m.group(2)),
+                    "team":  "",
+                    "slot":  -1,
                 })
     except Exception:
         try:
             sock.close()
         except Exception:
             pass
+
+    # ── RCON: merge team + slot info ───────────────────────────────────────
+    if server_online and players:
+        teams = rcon_get_teams()
+        for p in players:
+            info = teams.get(p["name"])
+            if info:
+                p["team"] = info["team"]
+                p["slot"] = info["slot"]
 
     # ── Log tail: kills and chat since last InitGame ───────────────────────
     kills = []
@@ -223,6 +236,7 @@ def parse_gameinfo():
     return {
         "online":         server_online,
         "map":            map_name,
+        "gametype":       gametype,
         "players":        players,
         "kills":          kills[-20:],
         "recent_matches": parse_recent_matches(),
@@ -264,6 +278,63 @@ def parse_recent_matches():
         pass
     # Return last 8, newest first
     return list(reversed(results[-8:]))
+
+# ─── RCON ─────────────────────────────────────────────────────────────────────
+
+def rcon_query(command, timeout=1.0):
+    """Send one RCON UDP command, return first response packet text or ''."""
+    import socket as _sock
+    if not _RCON_PASS:
+        return ""
+    pkt = (b'\xff\xff\xff\xffrcon ' +
+           _RCON_PASS.encode("latin-1") + b' ' +
+           command.encode("utf-8"))
+    s = _sock.socket(_sock.AF_INET, _sock.SOCK_DGRAM)
+    s.settimeout(timeout)
+    try:
+        s.sendto(pkt, ("127.0.0.1", _GAME_PORT))
+        data, _ = s.recvfrom(16384)
+        text = data.decode("latin-1", errors="replace")
+        if text.startswith("\xff\xff\xff\xff"):
+            text = text[4:]
+        if text.startswith("print\n"):
+            text = text[6:]
+        return text
+    except Exception:
+        return ""
+    finally:
+        try:
+            s.close()
+        except Exception:
+            pass
+
+_RCON_STATUS_RE = re.compile(
+    r"^\s*(\d+)\s+(-?\d+)\s+(\d+)\s+(.+?)\s{2,}\d+\s+\S+",
+    re.MULTILINE,
+)
+
+import time as _time
+_teams_cache = {"ts": 0.0, "data": {}}
+
+def rcon_get_teams():
+    """Return dict of cleaned_name -> {slot, team} with 8-second cache."""
+    global _teams_cache
+    now = _time.time()
+    if now - _teams_cache["ts"] < 8:
+        return _teams_cache["data"]
+    raw = rcon_query("status", timeout=1.5)
+    result = {}
+    for m in _RCON_STATUS_RE.finditer(raw):
+        slot = int(m.group(1))
+        name = _clean(m.group(4).strip())
+        du   = rcon_query(f"dumpuser {slot}", timeout=0.5)
+        tm   = re.search(r'\\team\\(\w+)', du) or re.search(r'\bteam\s+(\w+)', du)
+        result[name] = {
+            "slot": slot,
+            "team": tm.group(1).upper() if tm else "",
+        }
+    _teams_cache = {"ts": now, "data": result}
+    return result
 
 # ─── Match data layer ─────────────────────────────────────────────────────────
 
@@ -376,6 +447,8 @@ class Handler(BaseHTTPRequestHandler):
             self._login(); return
         if p == "/api/matches":
             self._guarded(self._create_match); return
+        if p == "/api/admin":
+            self._guarded(self._admin_action); return
         m = _RE_MATCH_JOIN.match(p)
         if m:
             mid = int(m.group(1))
@@ -472,6 +545,27 @@ class Handler(BaseHTTPRequestHandler):
 
     def _gameinfo(self):
         _json(self, 200, parse_gameinfo())
+
+    def _admin_action(self):
+        body   = _read_body(self)
+        action = body.get("action", "")
+        if action == "kick":
+            try:
+                slot = int(body.get("slot", -1))
+            except (TypeError, ValueError):
+                slot = -1
+            if slot < 0:
+                _json(self, 400, {"error": "slot required"}); return
+            result = rcon_query(f"clientkick {slot}", timeout=2.0)
+            _json(self, 200, {"ok": True, "result": result.strip()})
+        elif action == "map":
+            mapname = re.sub(r"[^\w\-]", "", (body.get("map") or "").strip())
+            if not mapname:
+                _json(self, 400, {"error": "invalid map name"}); return
+            result = rcon_query(f"map {mapname}", timeout=2.0)
+            _json(self, 200, {"ok": True, "result": result.strip()})
+        else:
+            _json(self, 400, {"error": "unknown action"})
 
     def _server_status(self):
         gi = parse_gameinfo()

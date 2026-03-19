@@ -1,5 +1,7 @@
 ---
 live_chat_dir: /opt/wolf-portal
 live_chat_port: 8080
-live_chat_password: "changeme"  # override in host_vars or vault
+live_chat_password: "changeme"
 live_chat_log_file: "{{ etlegacy_install_dir }}/home/legacy/server.log"
+etlegacy_rcon_password: "changeme"
+etlegacy_game_port: 27960
