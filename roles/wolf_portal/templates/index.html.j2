@@ -1767,8 +1767,8 @@ function renderMissions(matches) {
     // Action bar
     html += '<div class="mission-actions">';
     if (mySide === 0) {
-      html += '<button class="btn btn-primary" onclick="joinSide(' + m.id + ',1)">JOIN ' + _esc((m.team1 || 'ALLIES').toUpperCase()) + '</button>';
-      html += '<button class="btn" onclick="joinSide(' + m.id + ',2)">JOIN ' + _esc((m.team2 || 'AXIS').toUpperCase()) + '</button>';
+      html += '<button class="btn btn-primary" onclick="joinSide(' + m.id + ',1)">← ' + _esc((m.team1 || 'ALLIES').toUpperCase()) + '</button>';
+      html += '<button class="btn" onclick="joinSide(' + m.id + ',2)">' + _esc((m.team2 || 'AXIS').toUpperCase()) + ' →</button>';
     } else {
       html += '<button class="btn btn-amber" onclick="leaveMission(' + m.id + ')">LEAVE MISSION</button>';
     }
