@@ -108,6 +108,17 @@ body {
   font-size: 10px;
   letter-spacing: 2px;
   color: var(--tx-dim);
+  cursor: pointer;
+  border-bottom: 1px dotted transparent;
+  transition: border-color .2s;
+}
+.p-callsign:hover {
+  border-bottom-color: var(--g-dim);
+}
+.p-callsign:hover::after {
+  content: ' ✎';
+  color: var(--g-dim);
+  font-size: 10px;
 }
 .p-callsign span {
   color: var(--g);
@@ -956,8 +967,8 @@ body {
 <div id="callsignScreen" class="hidden">
   <div class="cs-wrap">
     <div class="cs-top">
-      <div class="cs-tag">IDENTIFICATION REQUIRED</div>
-      <div class="cs-title">ENTER CALLSIGN</div>
+      <div class="cs-tag" id="csTag">IDENTIFICATION REQUIRED</div>
+      <div class="cs-title" id="csTitle">ENTER CALLSIGN</div>
     </div>
     <div class="cs-body">
       <p class="cs-hint">
@@ -987,7 +998,7 @@ body {
       <span class="p-title">WOLF'S LAIR</span>
     </div>
     <div class="p-header-r">
-      <span class="p-callsign" id="hubCallsignTag"></span>
+      <span class="p-callsign" id="hubCallsignTag" onclick="editCallsign('hub')"></span>
       <span class="p-online">ONLINE</span>
       <button class="btn" onclick="logout()">[ LOGOUT ]</button>
     </div>
@@ -1161,7 +1172,7 @@ body {
       <span class="p-title">OPERATIONS · MISSION BOARD</span>
     </div>
     <div class="p-header-r">
-      <span class="p-callsign" id="opsCallsignTag"></span>
+      <span class="p-callsign" id="opsCallsignTag" onclick="editCallsign('ops')"></span>
       <button class="btn" onclick="showSection('hub')">◀ HUB</button>
     </div>
   </header>
@@ -1344,6 +1355,26 @@ function afterLogin() {
   }
 }
 
+let _callsignReturnTo = 'hub';
+
+function editCallsign(returnTo) {
+  _callsignReturnTo = returnTo || 'hub';
+  const inp = document.getElementById('csInput');
+  if (inp) inp.value = getCallsign();
+  const err = document.getElementById('csErr');
+  if (err) err.classList.remove('show');
+  const tag = document.getElementById('csTag');
+  const title = document.getElementById('csTitle');
+  if (getCallsign()) {
+    if (tag) tag.textContent = 'CHANGE CALLSIGN';
+    if (title) title.textContent = 'UPDATE CALLSIGN';
+  } else {
+    if (tag) tag.textContent = 'IDENTIFICATION REQUIRED';
+    if (title) title.textContent = 'ENTER CALLSIGN';
+  }
+  showSection('callsign');
+}
+
 function setCallsign() {
   const inp = document.getElementById('csInput');
   const err = document.getElementById('csErr');
@@ -1355,7 +1386,8 @@ function setCallsign() {
   }
   err.classList.remove('show');
   saveCallsign(name);
-  showSection('hub');
+  updateCallsignTags();
+  showSection(_callsignReturnTo);
 }
 
 /* ── Logout / session expired ───────────────────────── */
