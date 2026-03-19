@@ -677,47 +677,6 @@ body {
   gap: 20px;
 }
 
-/* Server status bar */
-.ops-status {
-  background: var(--bg-c);
-  border: 1px solid var(--bd);
-  padding: 12px 18px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-.ops-status-tag {
-  font-size: 9px;
-  letter-spacing: 3px;
-  color: var(--tx-lo);
-  flex-shrink: 0;
-}
-.ops-status-items {
-  display: flex;
-  gap: 18px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-.ops-status-item {
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--tx-dim);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.ops-status-item .s-key {
-  font-size: 9px;
-  letter-spacing: 2px;
-  color: var(--tx-lo);
-}
-.ops-status-item .s-val {
-  color: var(--g);
-  font-weight: bold;
-}
-.ops-status-item .s-val.na { color: var(--tx-lo); }
-
 /* Create form toggle bar */
 .ops-create-bar {
   display: flex;
@@ -1179,15 +1138,6 @@ body {
 
   <div class="ops-body">
 
-    <!-- Server status -->
-    <div class="ops-status">
-      <div class="ops-status-tag">◈ SERVER STATUS</div>
-      <div class="ops-status-items" id="opsStatus">
-        <span class="ops-status-item"><span class="s-key">MAP</span> <span class="s-val na" id="srvMap">—</span></span>
-        <span class="ops-status-item"><span class="s-key">ACTIVE PLAYERS</span> <span class="s-val na" id="srvPlayers">—</span></span>
-      </div>
-    </div>
-
     <!-- Create form -->
     <div>
       <div class="ops-create-bar">
@@ -1249,7 +1199,6 @@ body {
 const API_LOGIN   = '/chat/login';
 const API_CHAT    = '/chat/api';
 const API_MATCHES = '/api/matches';
-const API_STATUS  = '/api/status';
 
 /* ── Storage helpers ────────────────────────────────── */
 const getToken    = () => { try { return sessionStorage.getItem('w_tok'); } catch { return null; } };
@@ -1562,33 +1511,8 @@ async function loadChat(force) {
   }
 }
 
-/* ── OPS — server status ────────────────────────────── */
-async function loadServerStatus() {
-  if (!authToken) return;
-  try {
-    const res = await fetch(API_STATUS, {
-      headers: authHdr(authToken),
-      signal: AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return;
-    const data = await res.json();
-    const mapEl = document.getElementById('srvMap');
-    const plEl  = document.getElementById('srvPlayers');
-    if (mapEl) {
-      mapEl.textContent = (data.map && data.map !== 'N/A') ? data.map.toUpperCase() : '—';
-      mapEl.className   = 's-val' + ((data.map && data.map !== 'N/A') ? '' : ' na');
-    }
-    if (plEl) {
-      const players = Array.isArray(data.players) && data.players.length ? data.players.join(', ') : '—';
-      plEl.textContent = players;
-      plEl.className   = 's-val' + (players === '—' ? ' na' : '');
-    }
-  } catch {}
-}
-
 /* ── OPS — mission board ────────────────────────────── */
 async function loadOps() {
-  loadServerStatus();
   if (!authToken) return;
   const cs = getCallsign();
   try {
