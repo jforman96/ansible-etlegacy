@@ -221,40 +221,49 @@ def parse_gameinfo():
         pass
 
     return {
-        "online":   server_online,
-        "map":      map_name,
-        "players":  players,
-        "kills":    kills[-20:],
-        "chat":     chat[-10:],
+        "online":         server_online,
+        "map":            map_name,
+        "players":        players,
+        "kills":          kills[-20:],
+        "recent_matches": parse_recent_matches(),
     }
 
-    """Return current map and players active since last map load."""
+def parse_recent_matches():
+    """Return last N completed matches from the server log."""
+    results = []
     current_map = None
-    players = {}
     try:
         with open(logfile, "r", encoding="latin-1", errors="ignore") as f:
             lines = f.readlines()
-        for raw in lines[-3000:]:
-            line = _decode_czech(raw)
-            if "InitGame:" in line and "map:" in line:
-                try:
-                    current_map = line.split("map:", 1)[1].strip().split()[0]
-                    players = {}
-                except Exception:
-                    pass
-            if " say: " in line:
-                try:
-                    before, _ = line.split(" say: ", 1)
-                    parts = before.strip().split(None, 1)
-                    if len(parts) == 2:
-                        name = _clean(parts[1].strip())
-                        if name:
-                            players[name] = True
-                except Exception:
-                    pass
+        # Scan last 20000 lines for map/exit/scores
+        pending_map = None
+        pending_exit = None
+        for raw in lines[-20000:]:
+            line = raw.strip()
+            # Track current map from "N map: mapname" lines (after InitGame)
+            m = re.match(r"^\s*\d+\s+map:\s+(\S+)", line)
+            if m:
+                pending_map = m.group(1)
+                continue
+            # Exit reason
+            m = re.match(r"^\s*\d+\s+Exit:\s+(.+)", line)
+            if m:
+                pending_exit = m.group(1).strip()
+                continue
+            # Scores follow immediately after Exit
+            m = re.match(r"^\s*\d+\s+axis:(\d+)\s+allies:(\d+)", line)
+            if m and pending_exit is not None and pending_map:
+                results.append({
+                    "map":    pending_map,
+                    "exit":   pending_exit,
+                    "axis":   int(m.group(1)),
+                    "allies": int(m.group(2)),
+                })
+                pending_exit = None
     except FileNotFoundError:
         pass
-    return {"map": current_map or "N/A", "players": list(players.keys())}
+    # Return last 8, newest first
+    return list(reversed(results[-8:]))
 
 # ─── Match data layer ─────────────────────────────────────────────────────────
 
@@ -465,7 +474,8 @@ class Handler(BaseHTTPRequestHandler):
         _json(self, 200, parse_gameinfo())
 
     def _server_status(self):
-        _json(self, 200, parse_status())
+        gi = parse_gameinfo()
+        _json(self, 200, {"map": gi["map"], "players": [p["name"] for p in gi["players"]]})
 
     def log_message(self, fmt, *args):
         pass

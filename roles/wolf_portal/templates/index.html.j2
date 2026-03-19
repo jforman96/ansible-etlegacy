@@ -363,12 +363,15 @@ body {
 }
 .hub-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
-  max-width: 900px;
+  max-width: 1100px;
   width: 100%;
 }
-@media (max-width: 680px) {
+@media (max-width: 860px) {
+  .hub-grid { grid-template-columns: repeat(2, 1fr); max-width: 640px; }
+}
+@media (max-width: 480px) {
   .hub-grid { grid-template-columns: 1fr; max-width: 380px; }
 }
 .hub-card {
@@ -678,10 +681,13 @@ body {
 }
 .intel-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 20px;
 }
-@media (max-width: 640px) {
+@media (max-width: 860px) {
+  .intel-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 520px) {
   .intel-grid { grid-template-columns: 1fr; }
 }
 .intel-panel {
@@ -778,17 +784,26 @@ body {
 .kill-killer { color: var(--g); font-weight: bold; }
 .kill-victim { color: #ff6b35; }
 .kill-weapon { color: var(--tx-lo); font-size: 9px; letter-spacing: 2px; }
-/* Intel chat */
-.intel-chat-entry {
+/* Match history */
+.match-entry {
   font-size: 10px;
   letter-spacing: 1px;
-  padding: 4px 0;
-  border-bottom: 1px solid rgba(0,255,65,.05);
-  line-height: 1.5;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(0,255,65,.07);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
-.intel-chat-entry:last-child { border-bottom: none; }
-.intel-chat-name { color: var(--g); font-weight: bold; }
-.intel-chat-msg  { color: var(--tx-dim); }
+.match-entry:last-child { border-bottom: none; }
+.match-map  { color: var(--g); font-weight: bold; letter-spacing: 2px; font-size: 11px; }
+.match-score { color: var(--tx-dim); display: flex; gap: 10px; align-items: center; }
+.match-team  { color: var(--tx-lo); font-size: 9px; letter-spacing: 2px; }
+.match-val   { font-weight: bold; font-size: 14px; }
+.match-val.win { color: var(--g); }
+.match-val.lose { color: #ff6b35; }
+.match-val.draw { color: var(--tx-dim); }
+.match-sep   { color: var(--tx-lo); }
+.match-exit  { font-size: 8px; letter-spacing: 2px; color: var(--tx-lo); }
 .intel-refresh {
   font-size: 8px;
   letter-spacing: 2px;
@@ -1209,23 +1224,23 @@ body {
         </div>
       </div>
 
-      <!-- Kill feed -->
+      <!-- Combat feed -->
       <div class="intel-panel">
         <div class="intel-panel-hd">
-          <span class="intel-panel-title">✕ KILL FEED</span>
+          <span class="intel-panel-title">✕ COMBAT FEED</span>
         </div>
         <div class="intel-panel-body" id="intelKills">
-          <div class="intel-empty">NO KILLS YET</div>
+          <div class="intel-empty">NO EVENTS YET</div>
         </div>
       </div>
 
-      <!-- In-game chat (full width) -->
-      <div class="intel-panel" style="grid-column: 1 / -1;">
+      <!-- Recent match results -->
+      <div class="intel-panel">
         <div class="intel-panel-hd">
-          <span class="intel-panel-title">◉ IN-GAME CHAT</span>
+          <span class="intel-panel-title">◎ RECENT MATCHES</span>
         </div>
-        <div class="intel-panel-body" id="intelChat">
-          <div class="intel-empty">NO CHAT MESSAGES</div>
+        <div class="intel-panel-body" id="intelMatches">
+          <div class="intel-empty">NO MATCH DATA</div>
         </div>
       </div>
 
@@ -1810,10 +1825,9 @@ function renderIntel(data) {
   const killsEl = document.getElementById('intelKills');
   if (killsEl) {
     if (!data.kills || !data.kills.length) {
-      killsEl.innerHTML = '<div class="intel-empty">NO KILLS YET</div>';
+      killsEl.innerHTML = '<div class="intel-empty">NO EVENTS YET</div>';
     } else {
       let h = '';
-      // Show newest last (bottom = most recent)
       data.kills.forEach(k => {
         h += '<div class="kill-entry">' +
           '<span class="kill-killer">' + _esc(k.killer) + '</span>' +
@@ -1827,24 +1841,36 @@ function renderIntel(data) {
     }
   }
 
-  // In-game chat
-  const chatEl = document.getElementById('intelChat');
-  if (chatEl) {
-    if (!data.chat || !data.chat.length) {
-      chatEl.innerHTML = '<div class="intel-empty">NO CHAT MESSAGES</div>';
+  // Recent match results
+  const matchesEl = document.getElementById('intelMatches');
+  if (matchesEl) {
+    if (!data.recent_matches || !data.recent_matches.length) {
+      matchesEl.innerHTML = '<div class="intel-empty">NO MATCH DATA</div>';
     } else {
       let h = '';
-      data.chat.forEach(c => {
-        h += '<div class="intel-chat-entry">' +
-          '<span class="intel-chat-name">' + _esc(c.name) + ':</span> ' +
-          '<span class="intel-chat-msg">' + _esc(c.msg) + '</span>' +
+      data.recent_matches.forEach(m => {
+        const axis   = m.axis;
+        const allies = m.allies;
+        let axCls, alCls;
+        if (axis > allies)        { axCls = 'win';  alCls = 'lose'; }
+        else if (allies > axis)   { axCls = 'lose'; alCls = 'win';  }
+        else                      { axCls = 'draw'; alCls = 'draw'; }
+        h += '<div class="match-entry">' +
+          '<div class="match-map">' + _esc(m.map.toUpperCase()) + '</div>' +
+          '<div class="match-score">' +
+            '<span class="match-team">AXIS</span>' +
+            '<span class="match-val ' + axCls + '">' + axis + '</span>' +
+            '<span class="match-sep">·</span>' +
+            '<span class="match-val ' + alCls + '">' + allies + '</span>' +
+            '<span class="match-team">ALLIES</span>' +
+          '</div>' +
+          '<div class="match-exit">' + _esc(m.exit.toUpperCase()) + '</div>' +
           '</div>';
       });
-      chatEl.innerHTML = h;
+      matchesEl.innerHTML = h;
     }
   }
 }
-
 /* ── OPS — mission board ────────────────────────────── */
 async function loadOps() {
   if (!authToken) return;
