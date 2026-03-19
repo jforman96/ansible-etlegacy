@@ -90,19 +90,36 @@ body {
 .p-online {
   font-size: 10px;
   letter-spacing: 2px;
-  color: var(--g-dim);
+  color: var(--tx-lo);
   display: flex;
   align-items: center;
   gap: 7px;
+  transition: color .3s;
 }
 .p-online::before {
   content: '';
   display: inline-block;
   width: 7px; height: 7px;
   border-radius: 50%;
+  background: var(--tx-lo);
+  box-shadow: none;
+  transition: background .3s, box-shadow .3s;
+}
+.p-online.srv-online {
+  color: var(--g-dim);
+}
+.p-online.srv-online::before {
   background: var(--g);
   box-shadow: 0 0 8px var(--g);
   animation: pulse 2s ease-in-out infinite;
+}
+.p-online.srv-offline {
+  color: #ff4444;
+}
+.p-online.srv-offline::before {
+  background: #ff4444;
+  box-shadow: 0 0 6px #ff4444;
+  animation: none;
 }
 .p-callsign {
   font-size: 10px;
@@ -1165,7 +1182,7 @@ body {
     </div>
     <div class="p-header-r">
       <span class="p-callsign" id="hubCallsignTag" onclick="editCallsign('hub')"></span>
-      <span class="p-online">ONLINE</span>
+      <span class="p-online" id="srvDot0">CHECKING</span>
       <button class="btn" onclick="logout()">[ LOGOUT ]</button>
     </div>
   </header>
@@ -1241,7 +1258,8 @@ body {
       <span class="p-title">BRIDGE · GAME COMMAND</span>
     </div>
     <div class="p-header-r">
-      <span class="intel-refresh" id="intelRefreshTag">● LIVE</span>
+      <span class="p-online" id="srvDot1">CHECKING</span>
+      <span class="intel-refresh" id="intelRefreshTag"></span>
       <button class="btn" onclick="showSection('hub')">◀ HUB</button>
     </div>
   </header>
@@ -1326,7 +1344,8 @@ body {
       <span class="p-title">COMMS · LIVE CHAT</span>
     </div>
     <div class="p-header-r">
-      <span id="chatStatus" class="p-online">LIVE</span>
+      <span class="p-online" id="srvDot2">CHECKING</span>
+      <span id="chatStatus" style="font-size:9px;letter-spacing:2px;color:var(--tx-lo)"></span>
       <button class="btn" id="censorBtn">CENSOR OFF</button>
       <button class="btn" onclick="showSection('hub')">◀ HUB</button>
     </div>
@@ -1346,6 +1365,7 @@ body {
       <span class="p-title">CONNECT · SERVER ACCESS</span>
     </div>
     <div class="p-header-r">
+      <span class="p-online" id="srvDot3">CHECKING</span>
       <button class="btn" onclick="showSection('hub')">◀ HUB</button>
     </div>
   </header>
@@ -1356,15 +1376,18 @@ body {
       <div class="cn-card-hd">
         <div class="cn-card-hd-l">
           <div class="s-tag">SECTION 02 · SERVER CONNECTION</div>
-          <h3>ET:LEGACY CZ</h3>
+          <h3>WOLF'S LAIR</h3>
         </div>
-        <span class="p-online">ONLINE</span>
       </div>
 
       <div class="cn-server-info">
         <div class="cn-info-item">
           <span class="cn-info-lbl">HOST</span>
           <span class="cn-info-val">{{ etlegacy_server_name | default('wolf.jflab.cz') }}</span>
+        </div>
+        <div class="cn-info-item">
+          <span class="cn-info-lbl">PORT</span>
+          <span class="cn-info-val">{{ etlegacy_port | default(27960) }}</span>
         </div>
         <div class="cn-info-item">
           <span class="cn-info-lbl">GAME</span>
@@ -1381,32 +1404,19 @@ body {
       <div class="cn-methods">
 
         <div class="cn-method">
-          <div class="cn-method-tag">METHOD 01 · WINDOWS</div>
-          <div class="cn-method-title">ONE-CLICK LAUNCH</div>
-          <a class="launch-btn"
-             href="etl://{{ etlegacy_server_name | default('wolf.jflab.cz') }}:{{ etlegacy_port | default(27960) }}{% if etlegacy_password is defined and etlegacy_password %}?password={{ etlegacy_password }}{% endif %}">
-            ▶ LAUNCH &amp; CONNECT
-          </a>
-          <p class="cn-note">
-            Opens ET:Legacy and joins the server automatically.<br>
-            Requires <a href="https://www.etlegacy.com/download" target="_blank" rel="noopener">ET:Legacy v2.83+</a>
-            with the <code>etl://</code> protocol handler registered (Windows).
-          </p>
-        </div>
-
-        <div class="cn-method">
-          <div class="cn-method-tag">METHOD 02 · ANY PLATFORM</div>
-          <div class="cn-method-title">CONSOLE CONNECT</div>
+          <div class="cn-method-tag">HOW TO CONNECT</div>
+          <div class="cn-method-title">CONSOLE COMMAND</div>
           <div class="cn-cmd-row">
             <input class="cn-cmd" id="connectCmd" readonly
                    value="/connect {{ etlegacy_server_name | default('wolf.jflab.cz') }}">
             <button class="cn-copy-btn" onclick="copyConnectCmd()">COPY</button>
           </div>
           <p class="cn-note">
-            Open the in-game console with <strong>~</strong> (tilde),
-            paste and hit Enter.<br>
+            <strong>Step 1</strong> — Launch ET:Legacy and go to any map or the main menu.<br>
+            <strong>Step 2</strong> — Open the in-game console with <strong>~</strong> (tilde key).<br>
+            <strong>Step 3</strong> — Paste the command above and press <strong>Enter</strong>.<br>
 {% if etlegacy_password is defined and etlegacy_password %}
-            Then enter the server password when prompted.
+            <strong>Step 4</strong> — Enter the server password when prompted.
 {% else %}
             No password required.
 {% endif %}
@@ -1416,7 +1426,8 @@ body {
       </div>
 
       <div class="cn-footer">
-        Port {{ etlegacy_port | default(27960) }} · default ET port, no need to specify in the connect command.
+        Default ET port {{ etlegacy_port | default(27960) }} — no need to add it to the connect command. ·
+        <a href="https://www.etlegacy.com/download" target="_blank" rel="noopener">Download ET:Legacy</a>
       </div>
 
     </div>
@@ -1436,6 +1447,7 @@ body {
     </div>
     <div class="p-header-r">
       <span class="p-callsign" id="opsCallsignTag" onclick="editCallsign('ops')"></span>
+      <span class="p-online" id="srvDot4">CHECKING</span>
       <button class="btn" onclick="showSection('hub')">◀ HUB</button>
     </div>
   </header>
@@ -1517,13 +1529,46 @@ const saveAnonName= (id, name) => { try { localStorage.setItem('wolf_anon_' + id
 const authHdr = t => ({ Authorization: 'Bearer ' + t });
 
 /* ── App state ──────────────────────────────────────── */
-let authToken    = null;
-let chatInterval = null;
+let authToken     = null;
+let chatInterval  = null;
 let intelInterval = null;
-let lastData     = null;
-let censored     = false;
-let scrollLocked = false;
-let chatSetup    = false;
+let srvInterval   = null;
+let lastData      = null;
+let censored      = false;
+let scrollLocked  = false;
+let chatSetup     = false;
+let _srvOnline    = null;  // null=unknown, true, false
+
+const SRV_DOT_IDS = ['srvDot0','srvDot1','srvDot2','srvDot3','srvDot4'];
+
+function updateSrvDots(online) {
+  _srvOnline = online;
+  const cls  = online === true ? 'srv-online' : online === false ? 'srv-offline' : '';
+  const txt  = online === true ? 'ONLINE'     : online === false ? 'OFFLINE'     : 'CHECKING';
+  SRV_DOT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'p-online' + (cls ? ' ' + cls : '');
+    el.textContent = txt;
+  });
+}
+
+async function pollServerStatus() {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_GAMEINFO, {
+      headers: authHdr(authToken),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) { updateSrvDots(false); return; }
+    const data = await res.json();
+    updateSrvDots(data.online === true);
+    return data;
+  } catch {
+    updateSrvDots(false);
+  }
+}
 
 const ALL_SCREENS = ['loginScreen','callsignScreen','hubScreen','intelScreen','chatScreen','connectScreen','opsScreen'];
 
@@ -1554,7 +1599,6 @@ function showSection(name) {
   } else {
     if (intelInterval) { clearInterval(intelInterval); intelInterval = null; }
   }
-
   if (name === 'chat') {
     setupChat();
     loadChat();
@@ -1609,6 +1653,10 @@ async function handleLogin(e) {
 }
 
 function afterLogin() {
+  // Start shared server status poll (every 15s, all screens)
+  updateSrvDots(null);
+  pollServerStatus();
+  if (!srvInterval) srvInterval = setInterval(pollServerStatus, 15000);
   const cs = getCallsign();
   if (cs) {
     showSection('hub');
@@ -1659,6 +1707,7 @@ function logout() {
   authToken = null;
   if (chatInterval)  { clearInterval(chatInterval);  chatInterval  = null; }
   if (intelInterval) { clearInterval(intelInterval); intelInterval = null; }
+  if (srvInterval)   { clearInterval(srvInterval);   srvInterval   = null; }
   lastData = null; chatSetup = false;
   showSection('login');
   document.getElementById('bootSeq').innerHTML = '';
@@ -1835,19 +1884,14 @@ const GAMETYPE_NAMES = {
 async function loadIntel() {
   if (!authToken) return;
   const tag = document.getElementById('intelRefreshTag');
-  if (tag) { tag.textContent = '● SYNCING'; tag.classList.add('active'); }
+  if (tag) { tag.textContent = '⟳ SYNCING'; tag.classList.add('active'); }
   try {
-    const res = await fetch('/api/gameinfo', {
-      headers: authHdr(authToken),
-      signal: AbortSignal.timeout(6000),
-    });
-    if (res.status === 401) { sessionExpired(); return; }
-    if (!res.ok) return;
-    const data = await res.json();
+    const data = await pollServerStatus();
+    if (!data) return;
     renderIntel(data);
-    if (tag) { tag.textContent = '● LIVE'; tag.classList.add('active'); }
+    if (tag) { tag.textContent = ''; tag.classList.remove('active'); }
   } catch {
-    if (tag) { tag.textContent = '● OFFLINE'; tag.classList.remove('active'); }
+    if (tag) { tag.textContent = ''; tag.classList.remove('active'); }
   }
 }
 
