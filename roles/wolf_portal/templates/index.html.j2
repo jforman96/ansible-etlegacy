@@ -658,6 +658,145 @@ body {
 }
 
 /* ════════════════════════════════════════════════════
+   INTEL — GAME INFO
+   ════════════════════════════════════════════════════ */
+#intelScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  animation: fadein .25s ease;
+}
+.intel-body {
+  flex: 1;
+  padding: 24px 28px 40px;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.intel-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+@media (max-width: 640px) {
+  .intel-grid { grid-template-columns: 1fr; }
+}
+.intel-panel {
+  background: var(--bg-c);
+  border: 1px solid var(--bd);
+  display: flex;
+  flex-direction: column;
+}
+.intel-panel-hd {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.intel-panel-title {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+}
+.intel-panel-body {
+  padding: 14px 16px;
+  flex: 1;
+  overflow-y: auto;
+  max-height: 280px;
+}
+/* Map / status bar */
+.intel-status-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 20px;
+  background: var(--bg-c);
+  border: 1px solid var(--bd);
+}
+.intel-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.intel-stat-lbl {
+  font-size: 8px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+}
+.intel-stat-val {
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: var(--g);
+  font-weight: bold;
+}
+.intel-stat-val.na { color: var(--tx-lo); font-size: 12px; }
+/* Player table */
+.intel-tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.intel-tbl th {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--tx-lo);
+  padding: 4px 8px 8px 0;
+  text-align: left;
+  border-bottom: 1px solid var(--bd);
+}
+.intel-tbl td {
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid rgba(0,255,65,.06);
+  color: var(--tx-dim);
+  letter-spacing: 1px;
+}
+.intel-tbl td.name { color: var(--g); font-weight: bold; }
+.intel-tbl td.score { color: var(--g-dim); }
+.intel-tbl td.ping { color: var(--tx-lo); font-size: 10px; }
+.intel-empty {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--tx-lo);
+  padding: 10px 0;
+}
+/* Kill feed */
+.kill-entry {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,255,65,.05);
+  color: var(--tx-dim);
+  line-height: 1.5;
+}
+.kill-entry:last-child { border-bottom: none; }
+.kill-killer { color: var(--g); font-weight: bold; }
+.kill-victim { color: #ff6b35; }
+.kill-weapon { color: var(--tx-lo); font-size: 9px; letter-spacing: 2px; }
+/* Intel chat */
+.intel-chat-entry {
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(0,255,65,.05);
+  line-height: 1.5;
+}
+.intel-chat-entry:last-child { border-bottom: none; }
+.intel-chat-name { color: var(--g); font-weight: bold; }
+.intel-chat-msg  { color: var(--tx-dim); }
+.intel-refresh {
+  font-size: 8px;
+  letter-spacing: 2px;
+  color: var(--tx-lo);
+}
+.intel-refresh.active { color: var(--g-dim); }
+
+/* ════════════════════════════════════════════════════
    OPS — OPERATIONS
    ════════════════════════════════════════════════════ */
 #opsScreen {
@@ -968,6 +1107,18 @@ body {
 
     <div class="hub-grid">
 
+      <div class="hub-card" onclick="showSection('intel')">
+        <div class="card-num">SECTION · 00</div>
+        <div class="card-icon">⊕</div>
+        <div class="card-name">INTEL</div>
+        <div class="card-body">
+          Live game feed. Current map,
+          active players, kill log and
+          in-game chat. Auto-refreshes.
+        </div>
+        <div class="card-cta">MONITOR <span class="arr">▶</span></div>
+      </div>
+
       <div class="hub-card" onclick="showSection('chat')">
         <div class="card-num">SECTION · 01</div>
         <div class="card-icon">◉</div>
@@ -1007,6 +1158,78 @@ body {
     </div>
 
     <div class="hub-footer">ET:LEGACY CZ · {{ etlegacy_server_name | default('wolf.jflab.cz') }} · JFLAB.CZ</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     INTEL — GAME INFO
+     ═══════════════════════════════════════════════ -->
+<div id="intelScreen" class="hidden">
+  <header class="p-header">
+    <div class="p-header-l">
+      <img class="p-logo"
+           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+           alt="ET:Legacy">
+      <span class="p-title">INTEL · LIVE GAME FEED</span>
+    </div>
+    <div class="p-header-r">
+      <span class="intel-refresh" id="intelRefreshTag">● LIVE</span>
+      <button class="btn" onclick="showSection('hub')">◀ HUB</button>
+    </div>
+  </header>
+
+  <div class="intel-body">
+
+    <!-- Status bar -->
+    <div class="intel-status-row" id="intelStatusRow">
+      <div class="intel-stat">
+        <div class="intel-stat-lbl">SERVER</div>
+        <div class="intel-stat-val na" id="intelOnline">CHECKING</div>
+      </div>
+      <div class="intel-stat">
+        <div class="intel-stat-lbl">MAP</div>
+        <div class="intel-stat-val na" id="intelMap">—</div>
+      </div>
+      <div class="intel-stat">
+        <div class="intel-stat-lbl">PLAYERS</div>
+        <div class="intel-stat-val na" id="intelPlayerCount">—</div>
+      </div>
+    </div>
+
+    <!-- Two-column grid: players + kills, chat -->
+    <div class="intel-grid">
+
+      <!-- Players -->
+      <div class="intel-panel">
+        <div class="intel-panel-hd">
+          <span class="intel-panel-title">◈ ACTIVE PLAYERS</span>
+        </div>
+        <div class="intel-panel-body">
+          <div id="intelPlayers"><div class="intel-empty">NO PLAYERS CONNECTED</div></div>
+        </div>
+      </div>
+
+      <!-- Kill feed -->
+      <div class="intel-panel">
+        <div class="intel-panel-hd">
+          <span class="intel-panel-title">✕ KILL FEED</span>
+        </div>
+        <div class="intel-panel-body" id="intelKills">
+          <div class="intel-empty">NO KILLS YET</div>
+        </div>
+      </div>
+
+      <!-- In-game chat (full width) -->
+      <div class="intel-panel" style="grid-column: 1 / -1;">
+        <div class="intel-panel-hd">
+          <span class="intel-panel-title">◉ IN-GAME CHAT</span>
+        </div>
+        <div class="intel-panel-body" id="intelChat">
+          <div class="intel-empty">NO CHAT MESSAGES</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </div>
 
@@ -1199,6 +1422,7 @@ body {
 const API_LOGIN   = '/chat/login';
 const API_CHAT    = '/chat/api';
 const API_MATCHES = '/api/matches';
+const API_GAMEINFO = '/api/gameinfo';
 
 /* ── Storage helpers ────────────────────────────────── */
 const getToken    = () => { try { return sessionStorage.getItem('w_tok'); } catch { return null; } };
@@ -1214,12 +1438,13 @@ const authHdr = t => ({ Authorization: 'Bearer ' + t });
 /* ── App state ──────────────────────────────────────── */
 let authToken    = null;
 let chatInterval = null;
+let intelInterval = null;
 let lastData     = null;
 let censored     = false;
 let scrollLocked = false;
 let chatSetup    = false;
 
-const ALL_SCREENS = ['loginScreen','callsignScreen','hubScreen','chatScreen','connectScreen','opsScreen'];
+const ALL_SCREENS = ['loginScreen','callsignScreen','hubScreen','intelScreen','chatScreen','connectScreen','opsScreen'];
 
 /* ── Navigation ─────────────────────────────────────── */
 function showScreen(id) {
@@ -1234,12 +1459,20 @@ function showSection(name) {
     login:    'loginScreen',
     callsign: 'callsignScreen',
     hub:      'hubScreen',
+    intel:    'intelScreen',
     chat:     'chatScreen',
     connect:  'connectScreen',
     ops:      'opsScreen',
   };
   const target = map[name] || 'hubScreen';
   showScreen(target);
+
+  if (name === 'intel') {
+    loadIntel();
+    if (!intelInterval) intelInterval = setInterval(loadIntel, 5000);
+  } else {
+    if (intelInterval) { clearInterval(intelInterval); intelInterval = null; }
+  }
 
   if (name === 'chat') {
     setupChat();
@@ -1343,7 +1576,8 @@ function setCallsign() {
 function logout() {
   clearToken();
   authToken = null;
-  if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+  if (chatInterval)  { clearInterval(chatInterval);  chatInterval  = null; }
+  if (intelInterval) { clearInterval(intelInterval); intelInterval = null; }
   lastData = null; chatSetup = false;
   showSection('login');
   document.getElementById('bootSeq').innerHTML = '';
@@ -1353,7 +1587,8 @@ function logout() {
 function sessionExpired() {
   clearToken();
   authToken = null;
-  if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+  if (chatInterval)  { clearInterval(chatInterval);  chatInterval  = null; }
+  if (intelInterval) { clearInterval(intelInterval); intelInterval = null; }
   showSection('login');
   const err = document.getElementById('loginErr');
   err.textContent = '! SESSION EXPIRED — RE-AUTHENTICATE';
@@ -1508,6 +1743,105 @@ async function loadChat(force) {
     feed.querySelectorAll('.notice').forEach(n => n.remove());
     const notice = document.createElement('div'); notice.className = 'sep map notice';
     notice.textContent = '[CONNECTION ERROR — retrying] (' + msg + ')'; feed.appendChild(notice);
+  }
+}
+
+/* ── INTEL — game info ───────────────────────────────── */
+async function loadIntel() {
+  if (!authToken) return;
+  const tag = document.getElementById('intelRefreshTag');
+  if (tag) { tag.textContent = '● SYNCING'; tag.classList.add('active'); }
+  try {
+    const res = await fetch('/api/gameinfo', {
+      headers: authHdr(authToken),
+      signal: AbortSignal.timeout(6000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) return;
+    const data = await res.json();
+    renderIntel(data);
+    if (tag) { tag.textContent = '● LIVE'; tag.classList.add('active'); }
+  } catch {
+    if (tag) { tag.textContent = '● OFFLINE'; tag.classList.remove('active'); }
+  }
+}
+
+function renderIntel(data) {
+  // Status bar
+  const onlineEl = document.getElementById('intelOnline');
+  const mapEl    = document.getElementById('intelMap');
+  const countEl  = document.getElementById('intelPlayerCount');
+  if (onlineEl) {
+    onlineEl.textContent = data.online ? 'ONLINE' : 'OFFLINE';
+    onlineEl.className   = 'intel-stat-val' + (data.online ? '' : ' na');
+  }
+  if (mapEl) {
+    mapEl.textContent = (data.map && data.map !== 'N/A') ? data.map.toUpperCase() : '—';
+    mapEl.className   = 'intel-stat-val' + ((data.map && data.map !== 'N/A') ? '' : ' na');
+  }
+  if (countEl) {
+    const n = Array.isArray(data.players) ? data.players.length : 0;
+    countEl.textContent = n > 0 ? n + ' / 10' : '0';
+    countEl.className   = 'intel-stat-val' + (n > 0 ? '' : ' na');
+  }
+
+  // Players table
+  const playersEl = document.getElementById('intelPlayers');
+  if (playersEl) {
+    if (!data.players || !data.players.length) {
+      playersEl.innerHTML = '<div class="intel-empty">NO PLAYERS CONNECTED</div>';
+    } else {
+      let h = '<table class="intel-tbl"><thead><tr>' +
+        '<th>NAME</th><th>SCORE</th><th>PING</th>' +
+        '</tr></thead><tbody>';
+      data.players.forEach(p => {
+        h += '<tr>' +
+          '<td class="name">' + _esc(p.name) + '</td>' +
+          '<td class="score">' + p.score + '</td>' +
+          '<td class="ping">' + p.ping + ' ms</td>' +
+          '</tr>';
+      });
+      h += '</tbody></table>';
+      playersEl.innerHTML = h;
+    }
+  }
+
+  // Kill feed
+  const killsEl = document.getElementById('intelKills');
+  if (killsEl) {
+    if (!data.kills || !data.kills.length) {
+      killsEl.innerHTML = '<div class="intel-empty">NO KILLS YET</div>';
+    } else {
+      let h = '';
+      // Show newest last (bottom = most recent)
+      data.kills.forEach(k => {
+        h += '<div class="kill-entry">' +
+          '<span class="kill-killer">' + _esc(k.killer) + '</span>' +
+          ' <span style="color:var(--tx-lo)">›</span> ' +
+          '<span class="kill-victim">' + _esc(k.victim) + '</span>' +
+          ' &nbsp;<span class="kill-weapon">[' + _esc(k.weapon) + ']</span>' +
+          '</div>';
+      });
+      killsEl.innerHTML = h;
+      killsEl.scrollTop = killsEl.scrollHeight;
+    }
+  }
+
+  // In-game chat
+  const chatEl = document.getElementById('intelChat');
+  if (chatEl) {
+    if (!data.chat || !data.chat.length) {
+      chatEl.innerHTML = '<div class="intel-empty">NO CHAT MESSAGES</div>';
+    } else {
+      let h = '';
+      data.chat.forEach(c => {
+        h += '<div class="intel-chat-entry">' +
+          '<span class="intel-chat-name">' + _esc(c.name) + ':</span> ' +
+          '<span class="intel-chat-msg">' + _esc(c.msg) + '</span>' +
+          '</div>';
+      });
+      chatEl.innerHTML = h;
+    }
   }
 }
 
