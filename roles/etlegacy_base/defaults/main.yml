@@ -18,23 +18,22 @@ etlegacy_dirs:
   - legacy
 
 # Server identity
-etlegacy_hostname: "ET:Legacy Server"
-etlegacy_motd: "ET:Legacy Server"
-etlegacy_maxclients: 20
+etlegacy_hostname: "^3Wolf's Lair ^7· ^4jflab.cz"
+etlegacy_motd: "Po Práci na Frontu!"
+etlegacy_maxclients: 10
 
-# Auth — override these in your private vars
-etlegacy_password: ""
-etlegacy_rcon_password: "<CHANGE_ME>"
+# Auth
+etlegacy_password: "5.května"
+etlegacy_rcon_password: "115426"
 
-# Fast download (HTTP only — ET engine does not support HTTPS downloads)
-# Set to your server's base URL, e.g. "http://myserver.example.com"
-etlegacy_www_baseurl: ""
-etlegacy_www_fallbackurl: ""
+# Fast download — HTTP only (ET engine does not support HTTPS)
+etlegacy_www_baseurl: "http://wolf.jflab.cz"
+etlegacy_www_fallbackurl: "http://wolf.jflab.cz"
 etlegacy_dl_disconnected: "1"
 etlegacy_dl_maxrate: "42000"
 
-# Set to "0" to hide server from public master server browser (private servers)
-etlegacy_advert: "1"
+# Private server — hidden from public master server browser
+etlegacy_advert: "0"
 etlegacy_flood_protect: "1"
 
 etlegacy_map: battery
@@ -43,12 +42,11 @@ etlegacy_gametype: 6
 etlegacy_port: 27960
 
 etlegacy_min_map_age: "1"
-etlegacy_voice_chats_allowed: "5"
+etlegacy_voice_chats_allowed: "15"
 etlegacy_bluelimbotime: "15000"
 etlegacy_intermission_time: "25"
 
-# Nginx / TLS — used by nginx_etlegacy role if present
-# Override in private vars with your actual domain and certificate paths
-etlegacy_server_name: "myserver.example.com"
-nginx_ssl_certificate: "/etc/ssl/myserver/fullchain.pem"
-nginx_ssl_certificate_key: "/etc/ssl/myserver/privkey.pem"
+# Nginx / TLS (used by etlegacy_nginx role if present)
+etlegacy_server_name: "wolf.jflab.cz"
+nginx_ssl_certificate: "/etc/ssl/wolf/wolf.fullchain.pem"
+nginx_ssl_certificate_key: "/etc/ssl/wolf/wolf.key"
