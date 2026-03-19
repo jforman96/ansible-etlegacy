@@ -18,7 +18,7 @@ etlegacy_dirs:
   - legacy
 
 # Server identity
-etlegacy_hostname: "^3Wolf's Lair ^7· ^4jflab.cz"
+etlegacy_hostname: "^3Wolf's Lair"
 etlegacy_motd: "Po Práci na Frontu!"
 etlegacy_maxclients: 10
 
