@@ -3,7 +3,7 @@
   ansible.builtin.systemd:
     daemon_reload: yes
 
-- name: restart live-chat
+- name: restart wolf-portal
   ansible.builtin.systemd:
-    name: live-chat
+    name: wolf-portal
     state: restarted

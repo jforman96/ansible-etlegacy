@@ -1,0 +1,391 @@
+#!/usr/bin/env python3
+import re
+import json
+import hmac
+import hashlib
+import random
+import sqlite3
+from datetime import datetime
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+logfile   = "{{ live_chat_log_file }}"
+_PASSWORD = "{{ live_chat_password }}"
+DB_PATH   = "{{ live_chat_dir }}/portal.db"
+
+# Stateless token: HMAC-SHA256(password) — changing password auto-invalidates all tokens
+VALID_TOKEN = hmac.new(
+    b"et-live-chat-v1",
+    _PASSWORD.encode("utf-8"),
+    hashlib.sha256,
+).hexdigest()
+
+_CODENAMES = [
+    "GHOST", "VIPER", "SHADOW", "PHANTOM", "COBRA", "EAGLE", "FALCON",
+    "RAVEN", "HAWK", "STORM", "FROST", "BLADE", "TITAN", "CIPHER",
+    "NOVA",  "APEX",  "IRON",   "LYNX",   "OMEGA", "TALON", "WRAITH",
+    "FURY",  "GRIM",  "HAVOC",  "DUSK",   "PYRO",  "RIDGE", "SCOUT",
+]
+
+# ─── Database ─────────────────────────────────────────────────────────────────
+
+def init_db():
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.executescript("""
+            PRAGMA foreign_keys = ON;
+            CREATE TABLE IF NOT EXISTS matches (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                title      TEXT    NOT NULL,
+                match_date TEXT,
+                team1      TEXT    NOT NULL DEFAULT 'ALLIES',
+                team2      TEXT    NOT NULL DEFAULT 'AXIS',
+                anonymous  INTEGER NOT NULL DEFAULT 0,
+                created_by TEXT    NOT NULL,
+                created_at TEXT    NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS signups (
+                id         INTEGER PRIMARY KEY AUTOINCREMENT,
+                match_id   INTEGER NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
+                nickname   TEXT    NOT NULL,
+                codename   TEXT,
+                side       INTEGER NOT NULL,
+                joined_at  TEXT    NOT NULL,
+                UNIQUE (match_id, nickname)
+            );
+        """)
+
+def _db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    return conn
+
+# ─── Auth ─────────────────────────────────────────────────────────────────────
+
+def _check_bearer(handler) -> bool:
+    auth = handler.headers.get("Authorization", "")
+    if not auth.startswith("Bearer "):
+        return False
+    return hmac.compare_digest(auth[7:].strip(), VALID_TOKEN)
+
+# ─── HTTP helpers ─────────────────────────────────────────────────────────────
+
+def _json(handler, status, body) -> None:
+    data = json.dumps(body, ensure_ascii=False).encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "application/json; charset=utf-8")
+    handler.send_header("Content-Length", str(len(data)))
+    handler.end_headers()
+    try:
+        handler.wfile.write(data)
+    except (BrokenPipeError, ConnectionResetError):
+        pass
+
+def _read_body(handler) -> dict:
+    n = int(handler.headers.get("Content-Length", 0))
+    return json.loads(handler.rfile.read(n)) if n > 0 else {}
+
+# ─── Log parsing ──────────────────────────────────────────────────────────────
+
+_color_re = re.compile(r"\^\d")
+
+def _clean(s: str) -> str:
+    return _color_re.sub("", s)
+
+def _decode_czech(raw: str) -> str:
+    try:
+        line = raw.encode("latin-1").decode("cp1250")
+    except Exception:
+        try:
+            line = raw.encode("latin-1").decode("utf-8")
+        except Exception:
+            line = raw
+    def _esc(m):
+        try:
+            return chr(int(m.group(1), 10))
+        except Exception:
+            return m.group(0)
+    return re.sub(r"\\u\{([0-9]+)\}", _esc, line)
+
+def parse_chat():
+    output, current_day, current_map = [], None, None
+    day_changed = map_changed = False
+    try:
+        with open(logfile, "r", encoding="latin-1", errors="ignore") as f:
+            for raw in f:
+                line = _decode_czech(raw)
+                if "gametime:" in line:
+                    try:
+                        parts = line.split("gametime:", 1)[1].strip()
+                        nd = datetime.strptime(parts, "%a %b %d %H:%M:%S %Y").strftime("%Y-%m-%d")
+                        if nd != current_day:
+                            current_day, day_changed = nd, True
+                    except Exception:
+                        pass
+                if "InitGame:" in line and "map:" in line:
+                    try:
+                        nm = line.split("map:", 1)[1].strip().split()[0]
+                        if nm != current_map:
+                            current_map, map_changed = nm, True
+                    except Exception:
+                        pass
+                    continue
+                if " say: " in line:
+                    try:
+                        _, msg = line.split(" say: ", 1)
+                        msg = _clean(msg.strip())
+                        if day_changed:
+                            output.append("=== DAY " + current_day + " ===")
+                            day_changed = False
+                        if map_changed:
+                            output.append("--- MAP " + current_map + " ---")
+                            map_changed = False
+                        output.append(msg)
+                    except Exception:
+                        continue
+    except FileNotFoundError:
+        return ["Error: log file not found: " + logfile]
+    return output[-400:]
+
+def parse_status():
+    """Return current map and players active since last map load."""
+    current_map = None
+    players = {}
+    try:
+        with open(logfile, "r", encoding="latin-1", errors="ignore") as f:
+            lines = f.readlines()
+        for raw in lines[-3000:]:
+            line = _decode_czech(raw)
+            if "InitGame:" in line and "map:" in line:
+                try:
+                    current_map = line.split("map:", 1)[1].strip().split()[0]
+                    players = {}
+                except Exception:
+                    pass
+            if " say: " in line:
+                try:
+                    before, _ = line.split(" say: ", 1)
+                    parts = before.strip().split(None, 1)
+                    if len(parts) == 2:
+                        name = _clean(parts[1].strip())
+                        if name:
+                            players[name] = True
+                except Exception:
+                    pass
+    except FileNotFoundError:
+        pass
+    return {"map": current_map or "N/A", "players": list(players.keys())}
+
+# ─── Match data layer ─────────────────────────────────────────────────────────
+
+def _pick_codename(match_id, used_set):
+    available = [c for c in _CODENAMES if c not in used_set]
+    if not available:
+        n = 1
+        while ("AGENT-%02d" % n) in used_set:
+            n += 1
+        return "AGENT-%02d" % n
+    return random.choice(available)
+
+def get_matches(caller_callsign=""):
+    with _db() as conn:
+        rows = conn.execute(
+            "SELECT id, title, match_date, team1, team2, anonymous, created_by, created_at "
+            "FROM matches ORDER BY created_at DESC"
+        ).fetchall()
+        result = []
+        for row in rows:
+            anon = bool(row["anonymous"])
+            srows = conn.execute(
+                "SELECT nickname, codename, side FROM signups WHERE match_id=? ORDER BY joined_at",
+                (row["id"],)
+            ).fetchall()
+            signups = []
+            for s in srows:
+                display = s["codename"] if (anon and s["codename"]) else s["nickname"]
+                is_you  = (s["nickname"] == caller_callsign) if caller_callsign else False
+                signups.append({"nickname": display, "side": s["side"], "is_you": is_you})
+            result.append({
+                "id":         row["id"],
+                "title":      row["title"],
+                "match_date": row["match_date"],
+                "team1":      row["team1"],
+                "team2":      row["team2"],
+                "anonymous":  anon,
+                "created_by": row["created_by"],
+                "created_at": row["created_at"],
+                "signups":    signups,
+            })
+        return result
+
+def create_match(title, match_date, team1, team2, anonymous, created_by):
+    with _db() as conn:
+        cur = conn.execute(
+            "INSERT INTO matches (title, match_date, team1, team2, anonymous, created_by, created_at) "
+            "VALUES (?,?,?,?,?,?,?)",
+            (title, match_date or "", team1 or "ALLIES", team2 or "AXIS",
+             1 if anonymous else 0, created_by or "unknown",
+             datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+        )
+        conn.commit()
+        return cur.lastrowid
+
+def delete_match(match_id):
+    with _db() as conn:
+        conn.execute("DELETE FROM matches WHERE id=?", (match_id,))
+        conn.commit()
+
+def join_match(match_id, nickname, side):
+    with _db() as conn:
+        # Check if match is anonymous and pick codename if needed
+        row = conn.execute("SELECT anonymous FROM matches WHERE id=?", (match_id,)).fetchone()
+        if not row:
+            raise ValueError("match not found")
+        codename = None
+        if row["anonymous"]:
+            used = {s["codename"] for s in conn.execute(
+                "SELECT codename FROM signups WHERE match_id=? AND codename IS NOT NULL",
+                (match_id,)
+            ).fetchall()}
+            codename = _pick_codename(match_id, used)
+        conn.execute(
+            "INSERT OR REPLACE INTO signups (match_id, nickname, codename, side, joined_at) "
+            "VALUES (?,?,?,?,?)",
+            (match_id, nickname, codename, side,
+             datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S"))
+        )
+        conn.commit()
+
+def leave_match(match_id, nickname):
+    with _db() as conn:
+        conn.execute(
+            "DELETE FROM signups WHERE match_id=? AND nickname=?",
+            (match_id, nickname)
+        )
+        conn.commit()
+
+# ─── Request handler ──────────────────────────────────────────────────────────
+
+_RE_MATCH      = re.compile(r"^/api/matches/(\d+)$")
+_RE_MATCH_JOIN = re.compile(r"^/api/matches/(\d+)/join$")
+_RE_MATCH_LEAVE= re.compile(r"^/api/matches/(\d+)/leave$")
+
+class Handler(BaseHTTPRequestHandler):
+
+    def _guarded(self, fn):
+        if not _check_bearer(self):
+            _json(self, 401, {"error": "unauthorized"})
+            return
+        try:
+            fn()
+        except Exception as exc:
+            _json(self, 500, {"error": str(exc)})
+
+    def do_POST(self):
+        p = self.path
+        if p == "/chat/login":
+            self._login(); return
+        if p == "/api/matches":
+            self._guarded(self._create_match); return
+        m = _RE_MATCH_JOIN.match(p)
+        if m:
+            mid = int(m.group(1))
+            self._guarded(lambda: self._join_match(mid)); return
+        m = _RE_MATCH_LEAVE.match(p)
+        if m:
+            mid = int(m.group(1))
+            self._guarded(lambda: self._leave_match(mid)); return
+        _json(self, 404, {"error": "not found"})
+
+    def do_GET(self):
+        p = self.path
+        if p == "/chat/api":
+            self._guarded(self._chat); return
+        if p == "/api/matches":
+            self._guarded(self._list_matches); return
+        if p == "/api/status":
+            self._guarded(self._server_status); return
+        self.send_response(404); self.end_headers()
+
+    def do_DELETE(self):
+        m = _RE_MATCH.match(self.path)
+        if m:
+            mid = int(m.group(1))
+            self._guarded(lambda: self._delete_match(mid)); return
+        _json(self, 404, {"error": "not found"})
+
+    # ── Route handlers ────────────────────────────────────────────────────
+
+    def _login(self):
+        try:
+            body = _read_body(self)
+        except Exception:
+            _json(self, 400, {"error": "invalid request"}); return
+        pw = body.get("password", "")
+        if hmac.compare_digest(pw.encode("utf-8"), _PASSWORD.encode("utf-8")):
+            _json(self, 200, {"token": VALID_TOKEN})
+        else:
+            _json(self, 401, {"error": "invalid password"})
+
+    def _chat(self):
+        msgs = parse_chat()
+        data = json.dumps(msgs, ensure_ascii=False).encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        try:
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            pass
+
+    def _list_matches(self):
+        caller = self.headers.get("X-Callsign", "")
+        _json(self, 200, get_matches(caller))
+
+    def _create_match(self):
+        body = _read_body(self)
+        title = (body.get("title") or "").strip()
+        if not title:
+            _json(self, 400, {"error": "title required"}); return
+        mid = create_match(
+            title=title,
+            match_date=body.get("match_date", ""),
+            team1=body.get("team1", "ALLIES"),
+            team2=body.get("team2", "AXIS"),
+            anonymous=body.get("anonymous", False),
+            created_by=body.get("created_by", "unknown"),
+        )
+        _json(self, 201, {"id": mid})
+
+    def _delete_match(self, match_id):
+        delete_match(match_id)
+        _json(self, 200, {"ok": True})
+
+    def _join_match(self, match_id):
+        body = _read_body(self)
+        nickname = (body.get("nickname") or "").strip()
+        side = body.get("side", 1)
+        if not nickname:
+            _json(self, 400, {"error": "nickname required"}); return
+        join_match(match_id, nickname, int(side))
+        _json(self, 200, {"ok": True})
+
+    def _leave_match(self, match_id):
+        body = _read_body(self)
+        nickname = (body.get("nickname") or "").strip()
+        if not nickname:
+            _json(self, 400, {"error": "nickname required"}); return
+        leave_match(match_id, nickname)
+        _json(self, 200, {"ok": True})
+
+    def _server_status(self):
+        _json(self, 200, parse_status())
+
+    def log_message(self, fmt, *args):
+        pass
+
+if __name__ == "__main__":
+    init_db()
+    server = HTTPServer(("127.0.0.1", {{ live_chat_port }}), Handler)
+    print("Wolf's Lair backend on http://127.0.0.1:{{ live_chat_port }}")
+    server.serve_forever()

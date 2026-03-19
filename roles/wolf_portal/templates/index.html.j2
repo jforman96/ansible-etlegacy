@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/chat/favicon.ico" type="image/x-icon">
+<title>Wolf's Lair · Operations Center</title>
+<style>
+
+:root {
+  --g:      #00FF00;
+  --g-hi:   #66FF66;
+  --g-mid:  #00CC00;
+  --g-dim:  #009900;
+  --g-dark: #005500;
+  --g-mute: #003300;
+  --bg:     #040c04;
+  --bg-p:   #071207;
+  --bg-c:   #0b180b;
+  --bd:     #1a4a1a;
+  --bd-hi:  #007700;
+  --tx:     #00FF00;
+  --tx-mid: #00CC00;
+  --tx-dim: #009900;
+  --tx-lo:  #004400;
+  --red:    #ff4444;
+  --amber:  #ffaa00;
+  --font:   'Courier New', 'Lucida Console', monospace;
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; }
+
+body {
+  background-color: var(--bg);
+  color: var(--tx-mid);
+  font-family: var(--font);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,0.12) 0px, rgba(0,0,0,0.12) 1px,
+    transparent 1px, transparent 3px
+  );
+}
+
+.hidden { display: none !important; }
+
+::-webkit-scrollbar       { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--g-dark); border: 1px solid var(--bd); }
+::-webkit-scrollbar-thumb:hover { background: var(--g-mute); }
+
+@keyframes blink   { 0%,49%,100%{opacity:1} 50%,99%{opacity:0} }
+@keyframes pulse   { 0%,100%{opacity:1} 50%{opacity:.3} }
+@keyframes fadein  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes glow    { 0%,100%{text-shadow:0 0 8px rgba(0,255,0,.5)} 50%{text-shadow:0 0 20px rgba(0,255,0,.9),0 0 40px rgba(0,255,0,.3)} }
+@keyframes slidedn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Shared header ──────────────────────────────────── */
+.p-header {
+  background: var(--bg-p);
+  border-bottom: 1px solid var(--bd-hi);
+  padding: 0 28px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 0 24px rgba(0,255,0,.06), 0 2px 0 rgba(0,255,0,.08);
+}
+.p-header-l { display: flex; align-items: center; gap: 14px; }
+.p-logo {
+  width: 28px; height: 28px;
+  border: 1px solid var(--bd-hi);
+  filter: brightness(.8) sepia(1) hue-rotate(80deg) saturate(5);
+}
+.p-title {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  color: var(--g);
+  text-shadow: 0 0 12px rgba(0,255,0,.5);
+}
+.p-header-r { display: flex; align-items: center; gap: 12px; }
+.p-online {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--g-dim);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.p-online::before {
+  content: '';
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--g);
+  box-shadow: 0 0 8px var(--g);
+  animation: pulse 2s ease-in-out infinite;
+}
+.p-callsign {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--tx-dim);
+}
+.p-callsign span {
+  color: var(--g);
+  font-weight: bold;
+}
+
+/* ── Buttons ──────────────────────────────────────── */
+.btn {
+  background: transparent;
+  color: var(--g-dim);
+  border: 1px solid var(--bd);
+  padding: 6px 16px;
+  font-family: var(--font);
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn:hover {
+  color: var(--g);
+  border-color: var(--g-dim);
+  background: rgba(0,255,0,.05);
+  box-shadow: 0 0 10px rgba(0,255,0,.1);
+}
+.btn.is-active {
+  color: var(--g);
+  border-color: var(--g-mid);
+  background: var(--g-dark);
+}
+.btn-primary {
+  background: var(--g-dark);
+  color: var(--g);
+  border-color: var(--g-mid);
+  text-shadow: 0 0 6px rgba(0,255,0,.4);
+}
+.btn-primary:hover {
+  background: var(--g-mute);
+  box-shadow: 0 0 16px rgba(0,255,0,.15);
+}
+.btn-danger {
+  color: var(--red);
+  border-color: rgba(255,68,68,.3);
+}
+.btn-danger:hover {
+  background: rgba(255,68,68,.06);
+  border-color: var(--red);
+  box-shadow: 0 0 10px rgba(255,68,68,.1);
+}
+.btn-amber {
+  color: var(--amber);
+  border-color: rgba(255,170,0,.3);
+}
+.btn-amber:hover {
+  background: rgba(255,170,0,.06);
+  border-color: var(--amber);
+}
+
+/* ════════════════════════════════════════════════════
+   LOGIN
+   ════════════════════════════════════════════════════ */
+#loginScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.login-wrap {
+  width: 360px;
+  border: 1px solid var(--bd-hi);
+  background: var(--bg-c);
+  box-shadow: 0 0 80px rgba(0,255,0,.06);
+  animation: fadein .4s ease;
+}
+.login-top {
+  border-bottom: 1px solid var(--bd);
+  padding: 30px 32px 26px;
+  text-align: center;
+}
+.login-logo-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+.login-logo-img {
+  width: 38px; height: 38px;
+  border: 1px solid var(--bd-hi);
+  filter: brightness(.8) sepia(1) hue-rotate(80deg) saturate(5);
+}
+.login-heading {
+  font-size: 22px;
+  letter-spacing: 5px;
+  color: var(--g);
+  font-weight: bold;
+  text-shadow: 0 0 16px rgba(0,255,0,.6);
+  animation: glow 3s ease-in-out infinite;
+}
+.login-heading .cur { animation: blink 1s step-end infinite; }
+.login-sub {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--tx-dim);
+  margin-top: 6px;
+}
+.login-body { padding: 26px 32px 30px; }
+#bootSeq {
+  font-size: 11px;
+  color: var(--tx-dim);
+  line-height: 2.1;
+  min-height: 66px;
+  margin-bottom: 22px;
+}
+#bootSeq .bl { display: flex; justify-content: space-between; gap: 12px; }
+#bootSeq .ok { color: var(--g-dim); }
+#loginForm { display: flex; flex-direction: column; gap: 16px; }
+.field-lbl {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--tx-dim);
+  margin-bottom: 7px;
+}
+.field-inp {
+  width: 100%;
+  background: var(--bg);
+  color: var(--g);
+  border: 1px solid var(--bd-hi);
+  padding: 10px 14px;
+  font-family: var(--font);
+  font-size: 14px;
+  letter-spacing: 2px;
+  outline: none;
+  transition: border-color .15s, box-shadow .15s;
+}
+.field-inp:focus {
+  border-color: var(--g);
+  box-shadow: 0 0 12px rgba(0,255,0,.2), inset 0 0 8px rgba(0,255,0,.05);
+}
+.login-btn {
+  width: 100%;
+  padding: 12px;
+  background: var(--g-dark);
+  color: var(--g);
+  border: 1px solid var(--g-mid);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  cursor: pointer;
+  transition: all .15s ease;
+  text-shadow: 0 0 6px rgba(0,255,0,.6);
+}
+.login-btn:hover {
+  background: var(--g-mute);
+  box-shadow: 0 0 20px rgba(0,255,0,.18);
+}
+.login-err {
+  font-size: 10px;
+  color: var(--red);
+  letter-spacing: 1px;
+  text-align: center;
+  padding: 8px 12px;
+  border: 1px solid rgba(255,68,68,.35);
+  background: rgba(255,68,68,.06);
+  display: none;
+}
+.login-err.show { display: block; }
+
+/* ════════════════════════════════════════════════════
+   CALLSIGN
+   ════════════════════════════════════════════════════ */
+#callsignScreen {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+.cs-wrap {
+  width: 360px;
+  border: 1px solid var(--bd-hi);
+  background: var(--bg-c);
+  box-shadow: 0 0 80px rgba(0,255,0,.06);
+  animation: fadein .3s ease;
+}
+.cs-top {
+  border-bottom: 1px solid var(--bd);
+  padding: 26px 32px 22px;
+}
+.cs-tag {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--tx-dim);
+  margin-bottom: 8px;
+}
+.cs-title {
+  font-size: 18px;
+  letter-spacing: 4px;
+  color: var(--g);
+  font-weight: bold;
+  text-shadow: 0 0 10px rgba(0,255,0,.4);
+}
+.cs-body { padding: 26px 32px 30px; display: flex; flex-direction: column; gap: 16px; }
+.cs-hint {
+  font-size: 11px;
+  color: var(--tx-dim);
+  line-height: 1.8;
+  letter-spacing: .5px;
+}
+
+/* ════════════════════════════════════════════════════
+   HUB
+   ════════════════════════════════════════════════════ */
+#hubScreen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  animation: fadein .3s ease;
+}
+.hub-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 28px 24px;
+  gap: 28px;
+}
+.hub-label {
+  font-size: 10px;
+  letter-spacing: 5px;
+  color: var(--tx-dim);
+  text-align: center;
+}
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 900px;
+  width: 100%;
+}
+@media (max-width: 680px) {
+  .hub-grid { grid-template-columns: 1fr; max-width: 380px; }
+}
+.hub-card {
+  position: relative;
+  border: 1px solid var(--bd);
+  background: var(--bg-c);
+  padding: 32px 28px 28px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color .2s, background .2s, box-shadow .2s;
+  overflow: hidden;
+  min-height: 280px;
+}
+.hub-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 3px;
+  background: var(--bd);
+  transition: background .2s, box-shadow .2s;
+}
+.hub-card:hover {
+  border-color: var(--g-dim);
+  background: #0d200d;
+  box-shadow: 0 0 32px rgba(0,255,0,.08), inset 0 0 24px rgba(0,255,0,.03);
+}
+.hub-card:hover::before {
+  background: var(--g);
+  box-shadow: 0 0 12px var(--g), 0 0 24px rgba(0,255,0,.4);
+}
+.hub-card:active { background: rgba(0,255,0,.06); }
+.card-num {
+  font-size: 9px;
+  letter-spacing: 4px;
+  color: var(--tx-lo);
+  margin-bottom: 22px;
+}
+.card-icon {
+  font-size: 36px;
+  margin-bottom: 18px;
+  line-height: 1;
+  color: var(--g);
+  text-shadow: 0 0 10px rgba(0,255,0,.5);
+}
+.card-name {
+  font-size: 22px;
+  font-weight: bold;
+  letter-spacing: 4px;
+  color: var(--g);
+  text-shadow: 0 0 8px rgba(0,255,0,.4);
+  margin-bottom: 14px;
+}
+.card-body {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--tx-mid);
+  line-height: 1.9;
+  flex: 1;
+  margin-bottom: 26px;
+}
+.card-cta {
+  font-size: 10px;
+  letter-spacing: 3px;
+  color: var(--g-dim);
+  border-top: 1px solid var(--bd);
+  padding-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: color .15s, border-color .15s;
+}
+.card-cta .arr { transition: transform .2s; }
+.hub-card:hover .card-cta { color: var(--g); border-color: var(--bd-hi); }
+.hub-card:hover .card-cta .arr { transform: translateX(4px); }
+.hub-footer {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+  text-align: center;
+}
+
+/* ════════════════════════════════════════════════════
+   CHAT
+   ════════════════════════════════════════════════════ */
+#chatScreen {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  animation: fadein .25s ease;
+}
+#chatFeed {
+  flex: 1;
+  background: var(--bg);
+  padding: 16px 22px;
+  overflow-y: auto;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.msg {
+  display: flex;
+  padding: 2px 8px;
+  border-left: 2px solid transparent;
+  transition: background .1s, border-color .1s;
+}
+.msg:hover { background: rgba(0,255,0,.05); border-left-color: var(--bd-hi); }
+.nick {
+  font-weight: bold;
+  min-width: 140px;
+  flex-shrink: 0;
+  margin-right: 10px;
+  text-shadow: 0 0 4px rgba(0,255,0,.35);
+}
+.txt { color: var(--tx-mid); flex: 1; word-break: break-word; }
+.sep {
+  margin: 14px 0 8px;
+  padding: 6px 14px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-align: center;
+}
+.sep.day {
+  border: 1px solid var(--bd-hi);
+  background: var(--bg-c);
+  color: var(--g);
+  text-shadow: 0 0 6px rgba(0,255,0,.4);
+}
+.sep.map {
+  border-bottom: 1px dashed var(--bd);
+  color: var(--tx-dim);
+}
+
+/* ════════════════════════════════════════════════════
+   CONNECT
+   ════════════════════════════════════════════════════ */
+#connectScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  animation: fadein .25s ease;
+}
+.cn-body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+}
+.cn-card {
+  width: 100%;
+  max-width: 740px;
+  border: 1px solid var(--bd-hi);
+  background: var(--bg-c);
+  box-shadow: 0 0 48px rgba(0,0,0,.5);
+}
+.cn-card-hd {
+  border-bottom: 1px solid var(--bd);
+  padding: 18px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cn-card-hd-l .s-tag {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-dim);
+  margin-bottom: 5px;
+}
+.cn-card-hd-l h3 {
+  font-size: 16px;
+  letter-spacing: 3px;
+  color: var(--g);
+  text-shadow: 0 0 8px rgba(0,255,0,.4);
+}
+.cn-server-info {
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  gap: 28px;
+  flex-wrap: wrap;
+  background: var(--bg);
+}
+.cn-info-item { display: flex; flex-direction: column; gap: 4px; }
+.cn-info-lbl { font-size: 9px; letter-spacing: 2px; color: var(--tx-lo); }
+.cn-info-val { font-size: 13px; color: var(--g); font-weight: bold; letter-spacing: 1px; }
+.cn-methods {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--bd);
+}
+@media (max-width: 560px) { .cn-methods { grid-template-columns: 1fr; } }
+.cn-method {
+  padding: 22px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.cn-method:first-child { border-right: 1px solid var(--bd); }
+.cn-method-tag {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+}
+.cn-method-title {
+  font-size: 13px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--g-dim);
+}
+.launch-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: var(--g-dark);
+  color: var(--g);
+  border: 1px solid var(--g-mid);
+  text-align: center;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all .2s ease;
+  text-shadow: 0 0 8px rgba(0,255,0,.6);
+}
+.launch-btn:hover {
+  background: var(--g-mute);
+  box-shadow: 0 0 24px rgba(0,255,0,.14);
+}
+.cn-cmd-row {
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--bd-hi);
+  background: var(--bg);
+  overflow: hidden;
+}
+.cn-cmd {
+  flex: 1;
+  padding: 10px 14px;
+  font-family: var(--font);
+  font-size: 13px;
+  color: var(--g);
+  letter-spacing: 1px;
+  background: transparent;
+  border: none;
+  outline: none;
+  user-select: all;
+  cursor: text;
+}
+.cn-copy-btn {
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--bd);
+  padding: 0 14px;
+  color: var(--g-dim);
+  font-family: var(--font);
+  font-size: 10px;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.cn-copy-btn:hover { background: rgba(0,255,0,.06); color: var(--g); }
+.cn-note {
+  font-size: 10px;
+  color: var(--tx-lo);
+  line-height: 1.8;
+  letter-spacing: .5px;
+}
+.cn-note a { color: var(--g-dim); text-decoration: underline; }
+.cn-note code {
+  color: var(--g);
+  background: var(--bg);
+  padding: 1px 5px;
+  border: 1px solid var(--bd);
+  font-family: var(--font);
+}
+.cn-note strong { color: var(--tx-mid); }
+.cn-footer {
+  padding: 14px 28px;
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--tx-lo);
+  line-height: 1.9;
+}
+
+/* ════════════════════════════════════════════════════
+   OPS — OPERATIONS
+   ════════════════════════════════════════════════════ */
+#opsScreen {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  animation: fadein .25s ease;
+}
+.ops-body {
+  flex: 1;
+  padding: 24px 28px 40px;
+  max-width: 960px;
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Server status bar */
+.ops-status {
+  background: var(--bg-c);
+  border: 1px solid var(--bd);
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.ops-status-tag {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+  flex-shrink: 0;
+}
+.ops-status-items {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.ops-status-item {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--tx-dim);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ops-status-item .s-key {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--tx-lo);
+}
+.ops-status-item .s-val {
+  color: var(--g);
+  font-weight: bold;
+}
+.ops-status-item .s-val.na { color: var(--tx-lo); }
+
+/* Create form toggle bar */
+.ops-create-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ops-section-title {
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: var(--tx-dim);
+}
+
+/* Create form */
+.ops-create-form {
+  background: var(--bg-c);
+  border: 1px solid var(--bd-hi);
+  padding: 22px 24px;
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  animation: slidedn .2s ease;
+}
+.ops-create-form.open { display: flex; }
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 560px) { .form-row { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 7px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid var(--bd);
+}
+.anon-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: var(--tx-dim);
+  user-select: none;
+}
+.anon-toggle input[type=checkbox] { display: none; }
+.anon-box {
+  width: 14px; height: 14px;
+  border: 1px solid var(--bd-hi);
+  background: var(--bg);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  transition: all .15s;
+}
+.anon-toggle input:checked ~ .anon-box {
+  background: var(--g-dark);
+  border-color: var(--g-mid);
+  color: var(--g);
+}
+.anon-toggle:hover { color: var(--g); }
+.anon-label-on  { display: none; color: var(--amber); }
+.anon-toggle input:checked ~ .anon-label-off { display: none; }
+.anon-toggle input:checked ~ .anon-label-on  { display: inline; }
+
+/* Mission list */
+.ops-empty {
+  text-align: center;
+  padding: 48px 0;
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--tx-lo);
+  border: 1px dashed var(--bd);
+}
+
+.mission-card {
+  border: 1px solid var(--bd);
+  background: var(--bg-c);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.mission-card:hover { border-color: var(--bd-hi); }
+
+.mission-header {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--bd);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mission-header-l {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.mission-num {
+  font-size: 9px;
+  letter-spacing: 3px;
+  color: var(--tx-lo);
+  flex-shrink: 0;
+}
+.mission-title {
+  font-size: 14px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--g);
+  text-shadow: 0 0 6px rgba(0,255,0,.3);
+}
+.mission-date {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--tx-dim);
+}
+.badge-anon {
+  font-size: 9px;
+  letter-spacing: 2px;
+  color: var(--amber);
+  border: 1px solid rgba(255,170,0,.35);
+  padding: 2px 7px;
+  background: rgba(255,170,0,.05);
+}
+.mission-meta {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--tx-lo);
+  padding: 6px 20px;
+  border-bottom: 1px solid var(--bd);
+  background: var(--bg);
+}
+
+/* Teams */
+.mission-teams {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 500px) { .mission-teams { grid-template-columns: 1fr; } }
+
+.team-col {
+  padding: 14px 18px;
+  min-height: 80px;
+}
+.team-col:first-child { border-right: 1px solid var(--bd); }
+
+.team-header {
+  font-size: 10px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  color: var(--g-dim);
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.team-count {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--tx-lo);
+  font-weight: normal;
+}
+
+.player-list { display: flex; flex-direction: column; gap: 4px; }
+.player-entry {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--tx-mid);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 0;
+}
+.player-entry::before {
+  content: '●';
+  font-size: 7px;
+  color: var(--g-dark);
+  flex-shrink: 0;
+}
+.player-you {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--g);
+  border: 1px solid var(--g-dark);
+  padding: 1px 5px;
+  background: rgba(0,255,0,.05);
+}
+.team-empty {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--tx-lo);
+  font-style: italic;
+  padding: 4px 0;
+}
+
+/* Mission action bar */
+.mission-actions {
+  padding: 12px 18px;
+  border-top: 1px solid var(--bd);
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     LOGIN
+     ═══════════════════════════════════════════════ -->
+<div id="loginScreen">
+  <div class="login-wrap">
+    <div class="login-top">
+      <div class="login-logo-row">
+        <img class="login-logo-img"
+             src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+             alt="ET:Legacy">
+        <div class="login-heading">WOLF'S LAIR<span class="cur">█</span></div>
+      </div>
+      <div class="login-sub">OPERATIONS CENTER · JFLAB.CZ</div>
+    </div>
+    <div class="login-body">
+      <div id="bootSeq"></div>
+      <form id="loginForm" style="display:none">
+        <div>
+          <label class="field-lbl" for="pwdInput">ACCESS CODE</label>
+          <input class="field-inp" id="pwdInput" type="password"
+                 placeholder="············" autocomplete="current-password" required>
+        </div>
+        <button class="login-btn" type="submit">[ AUTHENTICATE ]</button>
+        <div class="login-err" id="loginErr">! ACCESS DENIED</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CALLSIGN
+     ═══════════════════════════════════════════════ -->
+<div id="callsignScreen" class="hidden">
+  <div class="cs-wrap">
+    <div class="cs-top">
+      <div class="cs-tag">IDENTIFICATION REQUIRED</div>
+      <div class="cs-title">ENTER CALLSIGN</div>
+    </div>
+    <div class="cs-body">
+      <p class="cs-hint">
+        Your callsign is stored in this browser and used when you sign up for missions.
+        Use your regular game nickname.
+      </p>
+      <div>
+        <label class="field-lbl" for="csInput">CALLSIGN</label>
+        <input class="field-inp" id="csInput" type="text"
+               placeholder="YourNick" maxlength="32" autocomplete="off" spellcheck="false">
+      </div>
+      <button class="login-btn" id="csBtn" onclick="setCallsign()">[ CONFIRM CALLSIGN ]</button>
+      <div class="login-err" id="csErr"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     HUB
+     ═══════════════════════════════════════════════ -->
+<div id="hubScreen" class="hidden">
+  <header class="p-header">
+    <div class="p-header-l">
+      <img class="p-logo"
+           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+           alt="ET:Legacy">
+      <span class="p-title">WOLF'S LAIR</span>
+    </div>
+    <div class="p-header-r">
+      <span class="p-callsign" id="hubCallsignTag"></span>
+      <span class="p-online">ONLINE</span>
+      <button class="btn" onclick="logout()">[ LOGOUT ]</button>
+    </div>
+  </header>
+
+  <div class="hub-body">
+    <div class="hub-label">SELECT SECTION</div>
+
+    <div class="hub-grid">
+
+      <div class="hub-card" onclick="showSection('chat')">
+        <div class="card-num">SECTION · 01</div>
+        <div class="card-icon">◉</div>
+        <div class="card-name">COMMS</div>
+        <div class="card-body">
+          Live in-game chat feed pulled
+          directly from the server log.
+          Auto-refreshes every 2.5 seconds.
+        </div>
+        <div class="card-cta">ENTER <span class="arr">▶</span></div>
+      </div>
+
+      <div class="hub-card" onclick="showSection('connect')">
+        <div class="card-num">SECTION · 02</div>
+        <div class="card-icon">◈</div>
+        <div class="card-name">CONNECT</div>
+        <div class="card-body">
+          Direct server access. One click to
+          launch ET:Legacy and join
+          {{ etlegacy_server_name | default('wolf.jflab.cz') }}.
+        </div>
+        <div class="card-cta">DEPLOY <span class="arr">▶</span></div>
+      </div>
+
+      <div class="hub-card" onclick="showSection('ops')">
+        <div class="card-num">SECTION · 03</div>
+        <div class="card-icon">◫</div>
+        <div class="card-name">OPERATIONS</div>
+        <div class="card-body">
+          Mission scheduling and team
+          rosters. Create matches, pick
+          your side and see who's in.
+        </div>
+        <div class="card-cta">BRIEFING <span class="arr">▶</span></div>
+      </div>
+
+    </div>
+
+    <div class="hub-footer">ET:LEGACY CZ · {{ etlegacy_server_name | default('wolf.jflab.cz') }} · JFLAB.CZ</div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CHAT
+     ═══════════════════════════════════════════════ -->
+<div id="chatScreen" class="hidden">
+  <header class="p-header">
+    <div class="p-header-l">
+      <img class="p-logo"
+           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+           alt="ET:Legacy">
+      <span class="p-title">COMMS · LIVE CHAT</span>
+    </div>
+    <div class="p-header-r">
+      <span id="chatStatus" class="p-online">LIVE</span>
+      <button class="btn" id="censorBtn">CENSOR OFF</button>
+      <button class="btn" onclick="showSection('hub')">◀ HUB</button>
+    </div>
+  </header>
+  <div id="chatFeed">INITIALIZING...</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     CONNECT
+     ═══════════════════════════════════════════════ -->
+<div id="connectScreen" class="hidden">
+  <header class="p-header">
+    <div class="p-header-l">
+      <img class="p-logo"
+           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+           alt="ET:Legacy">
+      <span class="p-title">CONNECT · SERVER ACCESS</span>
+    </div>
+    <div class="p-header-r">
+      <button class="btn" onclick="showSection('hub')">◀ HUB</button>
+    </div>
+  </header>
+
+  <div class="cn-body">
+    <div class="cn-card">
+
+      <div class="cn-card-hd">
+        <div class="cn-card-hd-l">
+          <div class="s-tag">SECTION 02 · SERVER CONNECTION</div>
+          <h3>ET:LEGACY CZ</h3>
+        </div>
+        <span class="p-online">ONLINE</span>
+      </div>
+
+      <div class="cn-server-info">
+        <div class="cn-info-item">
+          <span class="cn-info-lbl">HOST</span>
+          <span class="cn-info-val">{{ etlegacy_server_name | default('wolf.jflab.cz') }}</span>
+        </div>
+        <div class="cn-info-item">
+          <span class="cn-info-lbl">GAME</span>
+          <span class="cn-info-val">ET:LEGACY v{{ etlegacy_version | default('2.83') }}</span>
+        </div>
+{% if etlegacy_password is defined and etlegacy_password %}
+        <div class="cn-info-item">
+          <span class="cn-info-lbl">PASSWORD</span>
+          <span class="cn-info-val">{{ etlegacy_password }}</span>
+        </div>
+{% endif %}
+      </div>
+
+      <div class="cn-methods">
+
+        <div class="cn-method">
+          <div class="cn-method-tag">METHOD 01 · WINDOWS</div>
+          <div class="cn-method-title">ONE-CLICK LAUNCH</div>
+          <a class="launch-btn"
+             href="etl://{{ etlegacy_server_name | default('wolf.jflab.cz') }}:{{ etlegacy_port | default(27960) }}{% if etlegacy_password is defined and etlegacy_password %}?password={{ etlegacy_password }}{% endif %}">
+            ▶ LAUNCH &amp; CONNECT
+          </a>
+          <p class="cn-note">
+            Opens ET:Legacy and joins the server automatically.<br>
+            Requires <a href="https://www.etlegacy.com/download" target="_blank" rel="noopener">ET:Legacy v2.83+</a>
+            with the <code>etl://</code> protocol handler registered (Windows).
+          </p>
+        </div>
+
+        <div class="cn-method">
+          <div class="cn-method-tag">METHOD 02 · ANY PLATFORM</div>
+          <div class="cn-method-title">CONSOLE CONNECT</div>
+          <div class="cn-cmd-row">
+            <input class="cn-cmd" id="connectCmd" readonly
+                   value="/connect {{ etlegacy_server_name | default('wolf.jflab.cz') }}">
+            <button class="cn-copy-btn" onclick="copyConnectCmd()">COPY</button>
+          </div>
+          <p class="cn-note">
+            Open the in-game console with <strong>~</strong> (tilde),
+            paste and hit Enter.<br>
+{% if etlegacy_password is defined and etlegacy_password %}
+            Then enter the server password when prompted.
+{% else %}
+            No password required.
+{% endif %}
+          </p>
+        </div>
+
+      </div>
+
+      <div class="cn-footer">
+        Port {{ etlegacy_port | default(27960) }} · default ET port, no need to specify in the connect command.
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     OPS — OPERATIONS
+     ═══════════════════════════════════════════════ -->
+<div id="opsScreen" class="hidden">
+  <header class="p-header">
+    <div class="p-header-l">
+      <img class="p-logo"
+           src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRA_p8Ykuu2HCz1n1M0li_q14jRys2-TwSMyg&s"
+           alt="ET:Legacy">
+      <span class="p-title">OPERATIONS · MISSION BOARD</span>
+    </div>
+    <div class="p-header-r">
+      <span class="p-callsign" id="opsCallsignTag"></span>
+      <button class="btn" onclick="showSection('hub')">◀ HUB</button>
+    </div>
+  </header>
+
+  <div class="ops-body">
+
+    <!-- Server status -->
+    <div class="ops-status">
+      <div class="ops-status-tag">◈ SERVER STATUS</div>
+      <div class="ops-status-items" id="opsStatus">
+        <span class="ops-status-item"><span class="s-key">MAP</span> <span class="s-val na" id="srvMap">—</span></span>
+        <span class="ops-status-item"><span class="s-key">ACTIVE PLAYERS</span> <span class="s-val na" id="srvPlayers">—</span></span>
+      </div>
+    </div>
+
+    <!-- Create form -->
+    <div>
+      <div class="ops-create-bar">
+        <div class="ops-section-title">MISSION SCHEDULE</div>
+        <button class="btn btn-primary" id="newMissionBtn" onclick="toggleCreateForm()">+ NEW MISSION</button>
+      </div>
+
+      <div class="ops-create-form" id="opsCreateForm">
+        <div class="form-group full">
+          <label class="field-lbl" for="fTitle">MISSION TITLE *</label>
+          <input class="field-inp" id="fTitle" type="text"
+                 placeholder="Friday Night War" maxlength="80" autocomplete="off">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="field-lbl" for="fDate">DATE &amp; TIME</label>
+            <input class="field-inp" id="fDate" type="datetime-local">
+          </div>
+          <div class="form-group"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="field-lbl" for="fTeam1">TEAM 1 NAME</label>
+            <input class="field-inp" id="fTeam1" type="text"
+                   placeholder="ALLIES" maxlength="32" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label class="field-lbl" for="fTeam2">TEAM 2 NAME</label>
+            <input class="field-inp" id="fTeam2" type="text"
+                   placeholder="AXIS" maxlength="32" autocomplete="off">
+          </div>
+        </div>
+        <div class="form-actions">
+          <label class="anon-toggle">
+            <input type="checkbox" id="fAnon">
+            <span class="anon-box">✓</span>
+            <span class="anon-label-off">ANONYMOUS</span>
+            <span class="anon-label-on">ANONYMOUS ON</span>
+          </label>
+          <div style="display:flex;gap:10px;align-items:center">
+            <div class="login-err" id="createErr" style="padding:6px 10px;font-size:9px"></div>
+            <button class="btn" onclick="toggleCreateForm()">CANCEL</button>
+            <button class="btn btn-primary" onclick="submitMission()">SUBMIT MISSION ▶</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mission list -->
+    <div id="missionList"></div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ── Constants ──────────────────────────────────────── */
+const API_LOGIN   = '/chat/login';
+const API_CHAT    = '/chat/api';
+const API_MATCHES = '/api/matches';
+const API_STATUS  = '/api/status';
+
+/* ── Storage helpers ────────────────────────────────── */
+const getToken    = () => { try { return sessionStorage.getItem('w_tok'); } catch { return null; } };
+const setToken    = t  => { try { sessionStorage.setItem('w_tok', t); } catch {} };
+const clearToken  = () => { try { sessionStorage.removeItem('w_tok'); } catch {} };
+const getCallsign = () => { try { return localStorage.getItem('wolf_callsign') || ''; } catch { return ''; } };
+const saveCallsign= s  => { try { localStorage.setItem('wolf_callsign', s); } catch {} };
+const getAnonName = id => { try { return localStorage.getItem('wolf_anon_' + id) || ''; } catch { return ''; } };
+const saveAnonName= (id, name) => { try { localStorage.setItem('wolf_anon_' + id, name); } catch {} };
+
+const authHdr = t => ({ Authorization: 'Bearer ' + t });
+
+/* ── App state ──────────────────────────────────────── */
+let authToken    = null;
+let chatInterval = null;
+let lastData     = null;
+let censored     = false;
+let scrollLocked = false;
+let chatSetup    = false;
+
+const ALL_SCREENS = ['loginScreen','callsignScreen','hubScreen','chatScreen','connectScreen','opsScreen'];
+
+/* ── Navigation ─────────────────────────────────────── */
+function showScreen(id) {
+  ALL_SCREENS.forEach(s => {
+    const el = document.getElementById(s);
+    if (el) el.classList.toggle('hidden', s !== id);
+  });
+}
+
+function showSection(name) {
+  const map = {
+    login:    'loginScreen',
+    callsign: 'callsignScreen',
+    hub:      'hubScreen',
+    chat:     'chatScreen',
+    connect:  'connectScreen',
+    ops:      'opsScreen',
+  };
+  const target = map[name] || 'hubScreen';
+  showScreen(target);
+
+  if (name === 'chat') {
+    setupChat();
+    loadChat();
+    if (!chatInterval) chatInterval = setInterval(loadChat, 2500);
+  } else {
+    if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+  }
+
+  if (name === 'hub') {
+    updateCallsignTags();
+  }
+
+  if (name === 'ops') {
+    updateCallsignTags();
+    loadOps();
+  }
+}
+
+function updateCallsignTags() {
+  const cs = getCallsign();
+  const display = cs ? 'CALLSIGN: <span>' + _esc(cs) + '</span>' : '';
+  const t1 = document.getElementById('hubCallsignTag');
+  const t2 = document.getElementById('opsCallsignTag');
+  if (t1) t1.innerHTML = display;
+  if (t2) t2.innerHTML = display;
+}
+
+/* ── Login ──────────────────────────────────────────── */
+async function handleLogin(e) {
+  e.preventDefault();
+  const inp = document.getElementById('pwdInput');
+  const err = document.getElementById('loginErr');
+  try {
+    const res = await fetch(API_LOGIN, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: inp ? inp.value : '' }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 401) { err.classList.add('show'); inp.value = ''; inp.focus(); return; }
+    if (!res.ok) { err.textContent = '! SERVER ERROR ' + res.status; err.classList.add('show'); return; }
+    const { token } = await res.json();
+    setToken(token);
+    authToken = token;
+    err.classList.remove('show');
+    err.textContent = '! ACCESS DENIED';
+    afterLogin();
+  } catch {
+    err.textContent = '! CONNECTION ERROR';
+    err.classList.add('show');
+  }
+}
+
+function afterLogin() {
+  const cs = getCallsign();
+  if (cs) {
+    showSection('hub');
+  } else {
+    showSection('callsign');
+    setTimeout(() => document.getElementById('csInput') && document.getElementById('csInput').focus(), 50);
+  }
+}
+
+function setCallsign() {
+  const inp = document.getElementById('csInput');
+  const err = document.getElementById('csErr');
+  const name = (inp ? inp.value : '').trim();
+  if (!name) {
+    err.textContent = '! CALLSIGN CANNOT BE EMPTY';
+    err.classList.add('show');
+    return;
+  }
+  err.classList.remove('show');
+  saveCallsign(name);
+  showSection('hub');
+}
+
+/* ── Logout / session expired ───────────────────────── */
+function logout() {
+  clearToken();
+  authToken = null;
+  if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+  lastData = null; chatSetup = false;
+  showSection('login');
+  document.getElementById('bootSeq').innerHTML = '';
+  bootSequence();
+}
+
+function sessionExpired() {
+  clearToken();
+  authToken = null;
+  if (chatInterval) { clearInterval(chatInterval); chatInterval = null; }
+  showSection('login');
+  const err = document.getElementById('loginErr');
+  err.textContent = '! SESSION EXPIRED — RE-AUTHENTICATE';
+  err.classList.add('show');
+  document.getElementById('bootSeq').innerHTML = '';
+  document.getElementById('loginForm').style.display = '';
+  const pi = document.getElementById('pwdInput');
+  if (pi) pi.focus();
+}
+
+/* ── Init ───────────────────────────────────────────── */
+(async function init() {
+  const tok = getToken();
+  if (tok) {
+    try {
+      const res = await fetch(API_CHAT, {
+        headers: authHdr(tok),
+        signal: AbortSignal.timeout(5000),
+      });
+      if (res.ok) {
+        authToken = tok;
+        afterLogin();
+        return;
+      }
+    } catch {}
+    clearToken();
+  }
+  bootSequence();
+})();
+
+/* ── Boot sequence ──────────────────────────────────── */
+function bootSequence() {
+  const el = document.getElementById('bootSeq');
+  const form = document.getElementById('loginForm');
+  if (!el || !form) { if (form) form.style.display = ''; return; }
+  el.style.display = ''; form.style.display = 'none'; el.innerHTML = '';
+  const lines = [
+    { t: 'ETLEGACY SERVER v2.83 ..........', ok: 'ONLINE' },
+    { t: 'GAME LOG STREAM .................', ok: 'OK'     },
+    { t: 'SECURE CHANNEL ..................', ok: 'READY'  },
+  ];
+  let i = 0;
+  (function next() {
+    if (i >= lines.length) {
+      setTimeout(() => {
+        const ls = document.getElementById('loginScreen');
+        if (ls && !ls.classList.contains('hidden')) {
+          el.style.display = 'none';
+          form.style.display = '';
+          const pi = document.getElementById('pwdInput');
+          if (pi) pi.focus();
+        }
+      }, 300);
+      return;
+    }
+    const { t, ok } = lines[i++];
+    const s = document.createElement('span'); s.className = 'bl';
+    s.innerHTML = '<span>' + t + '</span><span class="ok">' + ok + '</span>';
+    el.appendChild(s);
+    setTimeout(next, 380);
+  })();
+}
+
+/* ── Chat ───────────────────────────────────────────── */
+function setupChat() {
+  if (chatSetup) return;
+  chatSetup = true;
+  const cb = document.getElementById('censorBtn');
+  if (cb) cb.addEventListener('click', () => {
+    censored = !censored;
+    cb.textContent = censored ? 'CENSOR ON' : 'CENSOR OFF';
+    cb.classList.toggle('is-active', censored);
+    loadChat(true);
+  });
+  const feed = document.getElementById('chatFeed');
+  if (feed) feed.addEventListener('scroll', () => {
+    scrollLocked = feed.scrollTop + feed.clientHeight < feed.scrollHeight - 60;
+  });
+}
+
+function nickColor(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h) + s.charCodeAt(i);
+  return ['#00FF00','#00EE00','#00DD00','#00CC00','#00BB00'][Math.abs(h) % 5];
+}
+
+function norm(s) {
+  return String(s).toLowerCase()
+    .normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[@4]/g, 'a').replace(/[0o]/g, 'o').replace(/[13]/g, 'i').replace(/5/g, 's')
+    .replace(/(.)\1{2,}/g, '$1$1').replace(/[^a-z0-9]/g, '');
+}
+const BAD = new Set([
+  'kurv','kund','pizd','cura','prdel','hovn','hovad','srat','srac',
+  'kokot','mrd','zmrd','jeb','debil','idiot','svin','blbec','blbost',
+  'pica','picu','pici','pico','picus','pichat','tvl','tyvol','vole',
+  'devk','defk','napicu','dopici','doprdele','vprdeli',
+  'fuck','shit','bitch','asshole','cunt','cock','moron','noob',
+].map(norm));
+
+function censor(text) {
+  if (!censored) return text;
+  return String(text).replace(/\S+/g, tok => {
+    const n = norm(tok);
+    if (!n) return tok;
+    for (const b of BAD) if (n === b || n.includes(b)) return tok.replace(/[A-Za-z0-9\u00C0-\u024F]/g, '*');
+    return tok;
+  });
+}
+
+async function loadChat(force) {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_CHAT, {
+      headers: authHdr(authToken),
+      signal: AbortSignal.timeout(7000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    const feed = document.getElementById('chatFeed');
+    if (!res.ok) { if (feed) feed.textContent = '[ERROR ' + res.status + ' — retrying]'; return; }
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    if (!force && JSON.stringify(data) === JSON.stringify(lastData)) return;
+    lastData = data;
+    if (!feed) return;
+    feed.innerHTML = '';
+    for (const line of data) {
+      if (line.startsWith('=== DAY ')) {
+        const d = document.createElement('div'); d.className = 'sep day';
+        d.textContent = line.replace(/^=== | ===$/, ''); feed.appendChild(d); continue;
+      }
+      if (line.startsWith('--- MAP ')) {
+        const d = document.createElement('div'); d.className = 'sep map';
+        d.textContent = line.replace(/^--- | ---$/, ''); feed.appendChild(d); continue;
+      }
+      const colon = line.indexOf(':');
+      const nick  = colon !== -1 ? line.slice(0, colon) : '???';
+      const text  = censor(colon !== -1 ? line.slice(colon + 1).trim() : line);
+      const row   = document.createElement('div'); row.className = 'msg';
+      const nSpan = document.createElement('span'); nSpan.className = 'nick';
+      nSpan.style.color = nickColor(nick); nSpan.textContent = nick + ':';
+      const tSpan = document.createElement('span'); tSpan.className = 'txt';
+      tSpan.textContent = text;
+      row.appendChild(nSpan); row.appendChild(tSpan); feed.appendChild(row);
+    }
+    if (!scrollLocked) setTimeout(() => { feed.scrollTop = feed.scrollHeight; }, 30);
+  } catch (err) {
+    const msg  = err && err.name === 'AbortError' ? 'timeout' : String((err && err.message) || err);
+    const feed = document.getElementById('chatFeed');
+    if (!feed) return;
+    if (!lastData || !lastData.length) { feed.textContent = '[CONNECTION ERROR — retrying] (' + msg + ')'; return; }
+    feed.querySelectorAll('.notice').forEach(n => n.remove());
+    const notice = document.createElement('div'); notice.className = 'sep map notice';
+    notice.textContent = '[CONNECTION ERROR — retrying] (' + msg + ')'; feed.appendChild(notice);
+  }
+}
+
+/* ── OPS — server status ────────────────────────────── */
+async function loadServerStatus() {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_STATUS, {
+      headers: authHdr(authToken),
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+    const mapEl = document.getElementById('srvMap');
+    const plEl  = document.getElementById('srvPlayers');
+    if (mapEl) {
+      mapEl.textContent = (data.map && data.map !== 'N/A') ? data.map.toUpperCase() : '—';
+      mapEl.className   = 's-val' + ((data.map && data.map !== 'N/A') ? '' : ' na');
+    }
+    if (plEl) {
+      const players = Array.isArray(data.players) && data.players.length ? data.players.join(', ') : '—';
+      plEl.textContent = players;
+      plEl.className   = 's-val' + (players === '—' ? ' na' : '');
+    }
+  } catch {}
+}
+
+/* ── OPS — mission board ────────────────────────────── */
+async function loadOps() {
+  loadServerStatus();
+  if (!authToken) return;
+  const cs = getCallsign();
+  try {
+    const res = await fetch(API_MATCHES, {
+      headers: Object.assign(authHdr(authToken), { 'X-Callsign': cs }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    if (!res.ok) return;
+    const matches = await res.json();
+    renderMissions(matches);
+  } catch {}
+}
+
+function toggleCreateForm() {
+  const form = document.getElementById('opsCreateForm');
+  const btn  = document.getElementById('newMissionBtn');
+  if (!form) return;
+  const opening = !form.classList.contains('open');
+  form.classList.toggle('open', opening);
+  if (btn) btn.textContent = opening ? '✕ CANCEL' : '+ NEW MISSION';
+  if (opening) {
+    const ti = document.getElementById('fTitle');
+    if (ti) ti.focus();
+  }
+  const err = document.getElementById('createErr');
+  if (err) err.classList.remove('show');
+}
+
+async function submitMission() {
+  if (!authToken) return;
+  const title = (document.getElementById('fTitle')  ? document.getElementById('fTitle').value  : '').trim();
+  const date  =  document.getElementById('fDate')   ? document.getElementById('fDate').value   : '';
+  const team1 = (document.getElementById('fTeam1')  ? document.getElementById('fTeam1').value  : '').trim() || 'ALLIES';
+  const team2 = (document.getElementById('fTeam2')  ? document.getElementById('fTeam2').value  : '').trim() || 'AXIS';
+  const anon  =  document.getElementById('fAnon')   ? document.getElementById('fAnon').checked  : false;
+  const err   =  document.getElementById('createErr');
+
+  if (!title) {
+    if (err) { err.textContent = '! TITLE REQUIRED'; err.classList.add('show'); }
+    document.getElementById('fTitle') && document.getElementById('fTitle').focus();
+    return;
+  }
+  if (err) err.classList.remove('show');
+
+  try {
+    const res = await fetch(API_MATCHES, {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHdr(authToken)),
+      body: JSON.stringify({
+        title,
+        match_date: date || '',
+        team1: team1.toUpperCase(),
+        team2: team2.toUpperCase(),
+        anonymous: anon,
+        created_by: getCallsign() || 'unknown',
+      }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      if (err) { err.textContent = '! SERVER ERROR ' + res.status; err.classList.add('show'); }
+      return;
+    }
+    // Reset form
+    ['fTitle','fDate','fTeam1','fTeam2'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const fa = document.getElementById('fAnon'); if (fa) fa.checked = false;
+    toggleCreateForm();
+    loadOps();
+  } catch {
+    if (err) { err.textContent = '! CONNECTION ERROR'; err.classList.add('show'); }
+  }
+}
+
+async function joinSide(matchId, side) {
+  if (!authToken) return;
+  const cs = getCallsign();
+  if (!cs) { showSection('callsign'); return; }
+  try {
+    const res = await fetch(API_MATCHES + '/' + matchId + '/join', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHdr(authToken)),
+      body: JSON.stringify({ nickname: cs, side: side }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    await loadOps();
+  } catch {}
+}
+
+async function leaveMission(matchId) {
+  if (!authToken) return;
+  const cs = getCallsign();
+  if (!cs) return;
+  try {
+    const res = await fetch(API_MATCHES + '/' + matchId + '/leave', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHdr(authToken)),
+      body: JSON.stringify({ nickname: cs }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    await loadOps();
+  } catch {}
+}
+
+async function deleteMission(matchId) {
+  if (!authToken) return;
+  try {
+    const res = await fetch(API_MATCHES + '/' + matchId, {
+      method: 'DELETE',
+      headers: authHdr(authToken),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.status === 401) { sessionExpired(); return; }
+    await loadOps();
+  } catch {}
+}
+
+/* ── OPS — rendering ────────────────────────────────── */
+function fmtDate(s) {
+  if (!s) return '';
+  try {
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    return d.toLocaleDateString('cs-CZ', { weekday:'short', day:'numeric', month:'short', year:'numeric' })
+      + ' ' + d.toLocaleTimeString('cs-CZ', { hour:'2-digit', minute:'2-digit' });
+  } catch { return s; }
+}
+
+function _esc(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderMissions(matches) {
+  const list = document.getElementById('missionList');
+  if (!list) return;
+  if (!matches || !matches.length) {
+    list.innerHTML = '<div class="ops-empty">NO MISSIONS SCHEDULED — CREATE THE FIRST ONE</div>';
+    return;
+  }
+
+  const cs = getCallsign();
+  let html = '';
+
+  matches.forEach((m, idx) => {
+    const t1players = (m.signups || []).filter(s => s.side === 1);
+    const t2players = (m.signups || []).filter(s => s.side === 2);
+    const myEntry   = (m.signups || []).find(s => s.is_you);
+    const mySide    = myEntry ? myEntry.side : 0;
+
+    // Header
+    html += '<div class="mission-card" id="mc-' + m.id + '">';
+    html += '<div class="mission-header">';
+    html += '<div class="mission-header-l">';
+    html += '<span class="mission-num">[' + String(idx + 1).padStart(2, '0') + ']</span>';
+    html += '<span class="mission-title">' + _esc(m.title) + '</span>';
+    if (m.match_date) html += '<span class="mission-date">· ' + _esc(fmtDate(m.match_date)) + '</span>';
+    if (m.anonymous)  html += '<span class="badge-anon">ANON</span>';
+    html += '</div>';
+    html += '</div>'; // mission-header
+
+    // Created by
+    html += '<div class="mission-meta">CREATED BY: ' + _esc(m.created_by) + '</div>';
+
+    // Teams
+    html += '<div class="mission-teams">';
+
+    // Team 1
+    html += '<div class="team-col">';
+    html += '<div class="team-header">' + _esc((m.team1 || 'ALLIES').toUpperCase());
+    html += '<span class="team-count">(' + t1players.length + ')</span></div>';
+    html += '<div class="player-list">';
+    if (t1players.length) {
+      t1players.forEach(p => {
+        html += '<div class="player-entry">' + _esc(p.nickname);
+        if (p.is_you) html += ' <span class="player-you">YOU</span>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="team-empty">— empty —</div>';
+    }
+    html += '</div></div>'; // player-list + team-col
+
+    // Team 2
+    html += '<div class="team-col">';
+    html += '<div class="team-header">' + _esc((m.team2 || 'AXIS').toUpperCase());
+    html += '<span class="team-count">(' + t2players.length + ')</span></div>';
+    html += '<div class="player-list">';
+    if (t2players.length) {
+      t2players.forEach(p => {
+        html += '<div class="player-entry">' + _esc(p.nickname);
+        if (p.is_you) html += ' <span class="player-you">YOU</span>';
+        html += '</div>';
+      });
+    } else {
+      html += '<div class="team-empty">— empty —</div>';
+    }
+    html += '</div></div>'; // player-list + team-col
+
+    html += '</div>'; // mission-teams
+
+    // Action bar
+    html += '<div class="mission-actions">';
+    if (mySide === 0) {
+      html += '<button class="btn btn-primary" onclick="joinSide(' + m.id + ',1)">JOIN ' + _esc((m.team1 || 'ALLIES').toUpperCase()) + '</button>';
+      html += '<button class="btn" onclick="joinSide(' + m.id + ',2)">JOIN ' + _esc((m.team2 || 'AXIS').toUpperCase()) + '</button>';
+    } else {
+      html += '<button class="btn btn-amber" onclick="leaveMission(' + m.id + ')">LEAVE MISSION</button>';
+    }
+    html += '<span style="flex:1"></span>';
+    html += '<button class="btn btn-danger" onclick="if(confirm(\'Delete this mission?\')) deleteMission(' + m.id + ')">DELETE ✕</button>';
+    html += '</div>'; // mission-actions
+
+    html += '</div>'; // mission-card
+  });
+
+  list.innerHTML = html;
+}
+
+/* ── Connect — copy command ──────────────────────── */
+function copyConnectCmd() {
+  const el = document.getElementById('connectCmd');
+  if (!el) return;
+  try {
+    navigator.clipboard.writeText(el.value).then(() => {
+      const btn = el.nextElementSibling;
+      if (btn) { btn.textContent = 'COPIED'; setTimeout(() => { btn.textContent = 'COPY'; }, 1800); }
+    });
+  } catch {
+    el.select();
+    document.execCommand('copy');
+  }
+}
+
+/* ── Callsign screen: enter on input ────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+  const csInput = document.getElementById('csInput');
+  if (csInput) {
+    csInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') setCallsign();
+    });
+  }
+  document.getElementById('loginForm') &&
+    document.getElementById('loginForm').addEventListener('submit', handleLogin);
+});
+</script>
+</body>
+</html>

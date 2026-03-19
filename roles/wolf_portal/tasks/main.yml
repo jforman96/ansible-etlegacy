@@ -1,5 +1,12 @@
 ---
-- name: Create live-chat directory
+- name: Stop and disable old live-chat service if present
+  ansible.builtin.systemd:
+    name: live-chat
+    state: stopped
+    enabled: no
+  failed_when: false
+
+- name: Create wolf-portal directory
   ansible.builtin.file:
     path: "{{ live_chat_dir }}"
     state: directory
@@ -14,7 +21,7 @@
     owner: root
     group: root
     mode: "0755"
-  notify: restart live-chat
+  notify: restart wolf-portal
 
 - name: Deploy favicon
   ansible.builtin.copy:
@@ -40,19 +47,19 @@
     group: root
     mode: "0755"
 
-- name: Deploy live-chat systemd service
+- name: Deploy wolf-portal systemd service
   ansible.builtin.template:
-    src: live-chat.service.j2
-    dest: /etc/systemd/system/live-chat.service
+    src: wolf-portal.service.j2
+    dest: /etc/systemd/system/wolf-portal.service
     owner: root
     group: root
     mode: "0644"
   notify:
     - reload systemd daemon
-    - restart live-chat
+    - restart wolf-portal
 
-- name: Enable and start live-chat service
+- name: Enable and start wolf-portal service
   ansible.builtin.systemd:
-    name: live-chat
+    name: wolf-portal
     enabled: yes
     state: started
