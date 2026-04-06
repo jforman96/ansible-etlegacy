@@ -44,7 +44,7 @@ etlegacy_port: 27960
 etlegacy_min_map_age: "1"
 etlegacy_voice_chats_allowed: "15"
 etlegacy_bluelimbotime: "15000"
-etlegacy_intermission_time: "25"
+etlegacy_intermission_time: "30"
 
 # Nginx / TLS (used by etlegacy_nginx role if present)
 etlegacy_server_name: "wolf.jflab.cz"
